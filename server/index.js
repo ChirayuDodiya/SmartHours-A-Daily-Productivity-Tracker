@@ -1,5 +1,6 @@
 const app = require('./app.js');
 const sql = require('./db/dbConnection.js');
+const initSchema = require('./db/initSchema.js');
 
 const PORT = process.env.PORT || 5000;
 
@@ -22,6 +23,18 @@ app.get('/db-test', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+async function startServer() {
+    try {
+        await initSchema();
+
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    }
+    catch (err) {
+        console.error('Failed to initialize database schema:', err);
+        process.exit(1);
+    }
+}
+
+startServer();

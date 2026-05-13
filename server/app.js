@@ -4,6 +4,10 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
     origin: process.env.FRONTEND_URL,
     credentials: true
