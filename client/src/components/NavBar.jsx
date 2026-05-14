@@ -5,6 +5,9 @@ export default function NavBar({ userEmail, onLogout }) {
     <nav className="app-nav">
       <strong style={{ cursor: 'pointer' }} onClick={() => navigateTo('/')}>SmartHours</strong>
       <div className="nav-actions">
+        <button type="button" className="secondary-action" style={{ border: 'none', background: 'transparent' }} onClick={() => navigateTo('/analytics')}>
+          Analytics
+        </button>
         <button type="button" className="secondary-action" style={{ border: 'none', background: 'transparent' }} onClick={() => navigateTo('/packs')}>
           Packs
         </button>
