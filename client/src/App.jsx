@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import heroImg from './assets/hero.png'
 import './App.css'
+import AuthPage from './components/AuthPage'
 import DailyPageShell from './components/DailyPageShell'
 import CalendarDashboard from './components/CalendarDashboard'
 import { getRoutePath, navigateTo } from './utils/helpers'
@@ -166,82 +166,22 @@ function App() {
       )
     }
 
-    return (
-      <CalendarDashboard user={authState.user} onLogout={handleLogout} />
-    )
+    return <CalendarDashboard user={authState.user} onLogout={handleLogout} />
   }
 
   return (
-    <main className="auth-shell">
-      <section className="auth-visual" aria-label="SmartHours overview">
-        <div className="brand-mark">SmartHours</div>
-        <img src={heroImg} alt="" className="hero-art" />
-        <div className="score-strip" aria-hidden="true">
-          <span>Today</span>
-          <strong>42 pts</strong>
-        </div>
-      </section>
-
-      <section className="auth-panel" aria-labelledby="auth-title">
-        <p className="eyebrow">{copy.eyebrow}</p>
-        <h1 id="auth-title">{copy.title}</h1>
-
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label htmlFor="email">
-            Email
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </label>
-
-          <label htmlFor="password">
-            Password
-            <input
-              id="password"
-              type="password"
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Minimum 8 characters"
-              minLength={isRegister ? 8 : undefined}
-              required
-            />
-          </label>
-
-          {status.message && (
-            <p className={`form-status ${status.type}`} role="status">
-              {status.message}
-            </p>
-          )}
-
-          <button className="primary-action" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Please wait...' : copy.submit}
-          </button>
-        </form>
-
-        <div className="divider">
-          <span>or</span>
-        </div>
-
-        <button className="google-action" type="button" onClick={handleGoogleAuth}>
-          <span aria-hidden="true">G</span>
-          Continue with Google
-        </button>
-
-        <p className="mode-switch">
-          {copy.switchPrompt}{' '}
-          <button type="button" onClick={switchMode}>
-            {copy.switchAction}
-          </button>
-        </p>
-      </section>
-    </main>
+    <AuthPage
+      copy={copy}
+      email={email}
+      password={password}
+      status={status}
+      isSubmitting={isSubmitting}
+      onEmailChange={(event) => setEmail(event.target.value)}
+      onPasswordChange={(event) => setPassword(event.target.value)}
+      onSubmit={handleSubmit}
+      onGoogleAuth={handleGoogleAuth}
+      onSwitchMode={switchMode}
+    />
   )
 }
 

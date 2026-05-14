@@ -7,6 +7,7 @@ import {
   navigateTo,
 } from '../utils/helpers'
 import { API_URL, WEEKDAYS, MONTH_FORMATTER, DAY_FORMATTER } from '../utils/constants'
+import ProtectedShell from './ProtectedShell'
 
 export default function CalendarDashboard({ user, onLogout }) {
   const [visibleMonth, setVisibleMonth] = useState(() => {
@@ -73,17 +74,7 @@ export default function CalendarDashboard({ user, onLogout }) {
   }
 
   return (
-    <main className="protected-shell">
-      <nav className="app-nav">
-        <strong>SmartHours</strong>
-        <div className="nav-actions">
-          <span>{user.email}</span>
-          <button type="button" onClick={onLogout}>
-            Log out
-          </button>
-        </div>
-      </nav>
-
+    <ProtectedShell user={user} onLogout={onLogout}>
       <section className="calendar-shell" aria-labelledby="dashboard-title">
         <div className="calendar-heading">
           <div>
@@ -159,6 +150,6 @@ export default function CalendarDashboard({ user, onLogout }) {
           </p>
         )}
       </section>
-    </main>
+    </ProtectedShell>
   )
 }

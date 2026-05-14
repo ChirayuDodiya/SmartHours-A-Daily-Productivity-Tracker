@@ -7,7 +7,8 @@ import {
   formatDuration,
 } from '../utils/helpers'
 import DailyPieChart from './DailyPieChart'
-
+import ProtectedShell from './ProtectedShell'
+import TaskCard from './TaskCard'
 
 export default function DailyPageShell({ date, user, onBack, onLogout }) {
   const [tasks, setTasks] = useState([])
@@ -208,16 +209,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
   }
 
   return (
-    <main className="protected-shell">
-      <nav className="app-nav">
-        <strong>SmartHours</strong>
-        <div className="nav-actions">
-          <span>{user.email}</span>
-          <button type="button" onClick={onLogout}>
-            Log out
-          </button>
-        </div>
-      </nav>
+    <ProtectedShell user={user} onLogout={onLogout}>
       <section className="daily-shell" aria-labelledby="daily-title">
         <div className="daily-heading">
           <div>
@@ -311,57 +303,24 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
               <p className="empty-state">No tasks added for this day yet.</p>
             ) : (
               <div className="task-list">
-                {tasks.map((task) => (
-                  <article
-                    className={`task-card${
-                      String(activeSession?.task_id) === String(task.id)
-                        ? ' active'
-                        : ''
-                    }`}
+                {tasks.map((task) => {
+                const elapsedSeconds = getTaskElapsedSeconds(task)
+                const isActive = String(activeSession?.task_id) === String(task.id)
+
+                return (
+                  <TaskCard
                     key={task.id}
-                  >
-                    <div className="task-card-main">
-                      <h3>{task.name}</h3>
-                      <span className="weight-badge">Weight {task.weight}</span>
-                    </div>
-                    <div className="timer-display" aria-label="Elapsed time">
-                      {formatDuration(getTaskElapsedSeconds(task))}
-                    </div>
-                    <div className="timer-actions">
-                      <button
-                        className="start-action"
-                        type="button"
-                        onClick={() => handleStartTimer(task.id)}
-                        disabled={
-                          !canStartTimers ||
-                          isSubmitting ||
-                          String(activeSession?.task_id) === String(task.id)
-                        }
-                      >
-                        Start
-                      </button>
-                      <button
-                        className="stop-action"
-                        type="button"
-                        onClick={() => handleStopTimer(task.id)}
-                        disabled={
-                          isSubmitting ||
-                          String(activeSession?.task_id) !== String(task.id)
-                        }
-                      >
-                        Stop
-                      </button>
-                      <button
-                        className="remove-action"
-                        type="button"
-                        onClick={() => handleDeleteTask(task.id)}
-                        aria-label={`Remove ${task.name}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                    task={task}
+                    elapsedSeconds={elapsedSeconds}
+                    isActive={isActive}
+                    isSubmitting={isSubmitting}
+                    canStartTimers={canStartTimers}
+                    onStart={() => handleStartTimer(task.id)}
+                    onStop={() => handleStopTimer(task.id)}
+                    onDelete={() => handleDeleteTask(task.id)}
+                  />
+                )
+              })}
               </div>
             )}
 
@@ -375,7 +334,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
 
         <DailyPieChart date={date} refreshTrigger={chartRefreshTick} />
       </section>
-    </main>
+    </ProtectedShell>
 
   )
 }
