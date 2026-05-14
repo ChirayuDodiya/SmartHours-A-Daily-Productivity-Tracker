@@ -6,6 +6,8 @@ import {
   calculatePoints,
   formatDuration,
 } from '../utils/helpers'
+import DailyPieChart from './DailyPieChart'
+
 
 export default function DailyPageShell({ date, user, onBack, onLogout }) {
   const [tasks, setTasks] = useState([])
@@ -17,6 +19,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
   const [nowTick, setNowTick] = useState(0)
   const [pageStatus, setPageStatus] = useState({ type: '', message: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [chartRefreshTick, setChartRefreshTick] = useState(0)
   const canStartTimers = date === getDateKey(new Date())
 
   function getTaskElapsedSeconds(task) {
@@ -79,6 +82,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
   async function refreshTasks() {
     const nextTasks = await apiRequest(`/api/v1/tasks/${date}`)
     setTasks(nextTasks)
+    setChartRefreshTick((tick) => tick + 1)
     return nextTasks
   }
 
@@ -102,6 +106,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
       })
 
       setTasks((currentTasks) => [...currentTasks, task])
+      setChartRefreshTick((tick) => tick + 1)
       setTaskName('')
       setTaskWeight('1')
     } catch (err) {
@@ -138,6 +143,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
       )
 
       setTasks((currentTasks) => [...currentTasks, ...createdTasks])
+      setChartRefreshTick((tick) => tick + 1)
       setSelectedPackId('')
     } catch (err) {
       setPageStatus({ type: 'error', message: err.message })
@@ -156,6 +162,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
       setTasks((currentTasks) => {
         return currentTasks.filter((task) => task.id !== taskId)
       })
+      setChartRefreshTick((tick) => tick + 1)
       if (String(activeSession?.task_id) === String(taskId)) {
         setActiveSession(null)
       }
@@ -365,7 +372,10 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
             )}
           </section>
         </div>
+
+        <DailyPieChart date={date} refreshTrigger={chartRefreshTick} />
       </section>
     </main>
+
   )
 }

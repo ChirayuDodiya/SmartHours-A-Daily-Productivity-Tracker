@@ -6,6 +6,8 @@ const packsRoutes = require('./routes/packsRoutes.js');
 const scoresRoutes = require('./routes/scoresRoutes.js');
 const sessionsRoutes = require('./routes/sessionsRoutes.js');
 const tasksRoutes = require('./routes/tasksRoutes.js');
+const analyticsRoutes = require('./routes/analyticsRoutes.js');
+
 
 const app = express();
 
@@ -33,5 +35,7 @@ app.use('/api/v1/packs', packsRoutes);
 app.use('/api/v1/scores', scoresRoutes);
 app.use('/api/v1/sessions', sessionsRoutes);
 app.use('/api/v1/tasks', tasksRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
+
 
 module.exports = app;
