@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import heroImg from './assets/hero.png'
 import './App.css'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import DailyPageShell from './components/DailyPageShell'
+import CalendarDashboard from './components/CalendarDashboard'
+import { getRoutePath, navigateTo } from './utils/helpers'
+import { API_URL } from './utils/constants'
 
 function App() {
   const [authState, setAuthState] = useState({
     isChecking: true,
     user: null,
   })
+  const [routePath, setRoutePath] = useState(getRoutePath)
   const [mode, setMode] = useState(() => {
     return window.location.pathname.toLowerCase().includes('register')
       ? 'register'
@@ -37,6 +40,18 @@ function App() {
           switchAction: 'Create account',
         }
   }, [isRegister])
+
+  useEffect(() => {
+    function handleRouteChange() {
+      setRoutePath(getRoutePath())
+    }
+
+    window.addEventListener('popstate', handleRouteChange)
+
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange)
+    }
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -138,20 +153,21 @@ function App() {
   }
 
   if (authState.user) {
+    const dayMatch = routePath.match(/^\/day\/(\d{4}-\d{2}-\d{2})$/)
+
+    if (dayMatch) {
+      return (
+        <DailyPageShell
+          date={dayMatch[1]}
+          user={authState.user}
+          onBack={() => navigateTo('/')}
+          onLogout={handleLogout}
+        />
+      )
+    }
+
     return (
-      <main className="protected-shell">
-        <nav className="app-nav">
-          <strong>SmartHours</strong>
-          <button type="button" onClick={handleLogout}>
-            Log out
-          </button>
-        </nav>
-        <section className="dashboard-preview">
-          <p className="eyebrow">Protected route</p>
-          <h1>Ready to track your day</h1>
-          <p>Signed in as {authState.user.email}</p>
-        </section>
-      </main>
+      <CalendarDashboard user={authState.user} onLogout={handleLogout} />
     )
   }
 

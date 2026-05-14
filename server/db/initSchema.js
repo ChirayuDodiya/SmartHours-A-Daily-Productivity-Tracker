@@ -26,7 +26,7 @@ async function initSchema() {
             user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             date DATE NOT NULL,
             name VARCHAR(255) NOT NULL,
-            weight INTEGER NOT NULL,
+            weight NUMERIC(8, 2) NOT NULL,
             pack_id BIGINT REFERENCES packs(id) ON DELETE SET NULL
         )
     `;
@@ -46,7 +46,7 @@ async function initSchema() {
             id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             date DATE NOT NULL,
-            total_points INTEGER NOT NULL DEFAULT 0,
+            total_points NUMERIC(10, 2) NOT NULL DEFAULT 0,
             total_seconds INTEGER NOT NULL DEFAULT 0,
             UNIQUE (user_id, date)
         )
@@ -57,7 +57,7 @@ async function initSchema() {
             id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             pack_id BIGINT NOT NULL REFERENCES packs(id) ON DELETE CASCADE,
             name VARCHAR(255) NOT NULL,
-            weight INTEGER NOT NULL
+            weight NUMERIC(8, 2) NOT NULL
         )
     `;
 
@@ -66,6 +66,10 @@ async function initSchema() {
     await sql`CREATE INDEX IF NOT EXISTS idx_task_sessions_task_id ON task_sessions(task_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_packs_user_id ON packs(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_pack_tasks_pack_id ON pack_tasks(pack_id)`;
+
+    await sql`ALTER TABLE tasks ALTER COLUMN weight TYPE NUMERIC(8, 2) USING weight::numeric`;
+    await sql`ALTER TABLE pack_tasks ALTER COLUMN weight TYPE NUMERIC(8, 2) USING weight::numeric`;
+    await sql`ALTER TABLE daily_scores ALTER COLUMN total_points TYPE NUMERIC(10, 2) USING total_points::numeric`;
 }
 
 module.exports = initSchema;
