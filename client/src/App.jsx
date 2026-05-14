@@ -3,6 +3,7 @@ import './App.css'
 import AuthPage from './components/AuthPage'
 import DailyPageShell from './components/DailyPageShell'
 import CalendarDashboard from './components/CalendarDashboard'
+import TaskPacksPage from './components/TaskPacksPage'
 import { getRoutePath, navigateTo } from './utils/helpers'
 import { API_URL } from './utils/constants'
 
@@ -164,6 +165,10 @@ function App() {
           onLogout={handleLogout}
         />
       )
+    }
+
+    if (routePath === '/packs') {
+      return <TaskPacksPage user={authState.user} onLogout={handleLogout} />
     }
 
     return <CalendarDashboard user={authState.user} onLogout={handleLogout} />

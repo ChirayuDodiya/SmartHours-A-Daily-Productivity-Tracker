@@ -4,7 +4,6 @@ import {
   apiRequest,
   formatDateHeading,
   calculatePoints,
-  formatDuration,
 } from '../utils/helpers'
 import DailyPieChart from './DailyPieChart'
 import ProtectedShell from './ProtectedShell'
