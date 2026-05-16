@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '@/components/ui/button'
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -21,22 +22,20 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <main className="loading-shell" style={{ flexDirection: 'column', gap: '16px', textAlign: 'center', padding: '24px' }}>
+        <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background px-6 text-center">
           <div>
-            <div className="loading-mark" style={{ marginBottom: '24px', fontSize: '24px' }}>SmartHours</div>
-            <h1 style={{ color: 'var(--text-h)', margin: '0 0 12px', fontSize: '32px' }}>Oops! Something went wrong.</h1>
-            <p style={{ color: 'var(--text)', margin: '0 0 32px', maxWidth: '400px', lineHeight: '1.5' }}>
-              We've encountered an unexpected error. Don't worry, your data is safe. Please refresh the page or return to the dashboard.
+            <p className="text-lg font-bold text-primary">SmartHours</p>
+            <h1 className="mt-4 text-2xl font-semibold text-foreground">
+              Something went wrong
+            </h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              We hit an unexpected error. Your data is safe — try reloading or return to the
+              dashboard.
             </p>
-            <button 
-              type="button" 
-              className="primary-action" 
-              style={{ width: 'auto', padding: '0 32px' }} 
-              onClick={this.handleReload}
-            >
-              Reload Dashboard
-            </button>
           </div>
+          <Button type="button" onClick={this.handleReload}>
+            Reload dashboard
+          </Button>
         </main>
       )
     }

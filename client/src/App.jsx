@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import './App.css'
 import AuthPage from './components/AuthPage'
+import LoadingScreen from './components/shared/LoadingScreen'
 import DailyPageShell from './components/DailyPageShell'
 import CalendarDashboard from './components/CalendarDashboard'
 import TaskPacksPage from './components/TaskPacksPage'
@@ -177,11 +177,7 @@ function App() {
   }
 
   if (authState.isChecking) {
-    return (
-      <main className="loading-shell">
-        <div className="loading-mark">SmartHours</div>
-      </main>
-    )
+    return <LoadingScreen />
   }
 
   if (authState.user) {

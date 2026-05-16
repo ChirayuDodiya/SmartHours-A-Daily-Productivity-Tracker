@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ArrowLeft, ListTodo, Plus } from 'lucide-react'
 import {
   getDateKey,
   apiRequest,
@@ -8,6 +9,13 @@ import {
 import DailyPieChart from './DailyPieChart'
 import ProtectedShell from './ProtectedShell'
 import TaskCard from './TaskCard'
+import PageHeader from './layout/PageHeader'
+import EmptyState from './shared/EmptyState'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function DailyPageShell({ date, user, onBack, onLogout }) {
   const [tasks, setTasks] = useState([])
@@ -57,26 +65,16 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
         setPageStatus({ type: '', message: '' })
       })
       .catch((err) => {
-        if (err.name === 'AbortError') {
-          return
-        }
-
+        if (err.name === 'AbortError') return
         setPageStatus({ type: 'error', message: err.message })
       })
 
-    return () => {
-      controller.abort()
-    }
+    return () => controller.abort()
   }, [date])
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNowTick(Date.now())
-    }, 1000)
-
-    return () => {
-      window.clearInterval(intervalId)
-    }
+    const intervalId = window.setInterval(() => setNowTick(Date.now()), 1000)
+    return () => window.clearInterval(intervalId)
   }, [])
 
   async function refreshTasks() {
@@ -104,7 +102,6 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
         name: taskName,
         weight: Number(taskWeight),
       })
-
       setTasks((currentTasks) => [...currentTasks, task])
       setChartRefreshTick((tick) => tick + 1)
       setTaskName('')
@@ -132,16 +129,15 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
 
     try {
       const createdTasks = await Promise.all(
-        pack.tasks.map((task) => {
-          return createTask({
+        pack.tasks.map((task) =>
+          createTask({
             date,
             name: task.name,
             weight: task.weight,
             pack_id: pack.id,
-          })
-        }),
+          }),
+        ),
       )
-
       setTasks((currentTasks) => [...currentTasks, ...createdTasks])
       setChartRefreshTick((tick) => tick + 1)
       setSelectedPackId('')
@@ -154,14 +150,9 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
 
   async function handleDeleteTask(taskId) {
     setPageStatus({ type: '', message: '' })
-
     try {
-      await apiRequest(`/api/v1/tasks/${taskId}`, {
-        method: 'DELETE',
-      })
-      setTasks((currentTasks) => {
-        return currentTasks.filter((task) => task.id !== taskId)
-      })
+      await apiRequest(`/api/v1/tasks/${taskId}`, { method: 'DELETE' })
+      setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId))
       setChartRefreshTick((tick) => tick + 1)
       if (String(activeSession?.task_id) === String(taskId)) {
         setActiveSession(null)
@@ -174,11 +165,8 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
   async function handleStartTimer(taskId) {
     setIsSubmitting(true)
     setPageStatus({ type: '', message: '' })
-
     try {
-      const data = await apiRequest(`/api/v1/tasks/${taskId}/start`, {
-        method: 'POST',
-      })
+      const data = await apiRequest(`/api/v1/tasks/${taskId}/start`, { method: 'POST' })
       setActiveSession(data.active_session)
       setNowTick((currentTick) => currentTick + 1)
       await refreshTasks()
@@ -192,11 +180,8 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
   async function handleStopTimer(taskId) {
     setIsSubmitting(true)
     setPageStatus({ type: '', message: '' })
-
     try {
-      await apiRequest(`/api/v1/tasks/${taskId}/stop`, {
-        method: 'POST',
-      })
+      await apiRequest(`/api/v1/tasks/${taskId}/stop`, { method: 'POST' })
       setActiveSession(null)
       setNowTick((currentTick) => currentTick + 1)
       await refreshTasks()
@@ -209,66 +194,83 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
 
   return (
     <ProtectedShell user={user} onLogout={onLogout}>
-      <section className="daily-shell" aria-labelledby="daily-title">
-        <div className="daily-heading">
-          <div>
-            <button className="back-action" type="button" onClick={onBack}>
-              &lt; Calendar
-            </button>
-            <p className="eyebrow">Daily view</p>
-            <h1 id="daily-title">{formatDateHeading(date)}</h1>
-          </div>
+      <Button type="button" variant="ghost" size="sm" className="mb-4 -ml-2 gap-1" onClick={onBack}>
+        <ArrowLeft className="h-4 w-4" />
+        Calendar
+      </Button>
 
-          <div className="daily-score" aria-label="Total daily score">
-            <span>Total score</span>
-            <strong>{totalScore.toFixed(1)}</strong>
-          </div>
-        </div>
+      <PageHeader
+        eyebrow="Daily view"
+        title={formatDateHeading(date)}
+        actions={
+          <Card className="min-w-[140px] border-primary/20 bg-primary/5">
+            <CardContent className="p-4 text-right">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Total score
+              </p>
+              <p className="text-3xl font-bold tabular-nums text-foreground">
+                {totalScore.toFixed(1)}
+              </p>
+            </CardContent>
+          </Card>
+        }
+      />
 
-        <div className="daily-workspace">
-          <section className="task-tools" aria-label="Add tasks">
-            <form className="task-form" onSubmit={handleCustomTaskSubmit}>
-              <h2>Add custom task</h2>
-              <label htmlFor="task-name">
-                Name
-                <input
-                  id="task-name"
-                  value={taskName}
-                  onChange={(event) => setTaskName(event.target.value)}
-                  placeholder="Deep work"
-                  maxLength="255"
-                  required
-                />
-              </label>
+      <div className="grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr]">
+        <aside className="space-y-4" aria-label="Add tasks">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Plus className="h-4 w-4" />
+                Add custom task
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" onSubmit={handleCustomTaskSubmit}>
+                <div className="space-y-2">
+                  <Label htmlFor="task-name">Name</Label>
+                  <Input
+                    id="task-name"
+                    value={taskName}
+                    onChange={(event) => setTaskName(event.target.value)}
+                    placeholder="Deep work"
+                    maxLength={255}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="task-weight">Weight</Label>
+                  <Input
+                    id="task-weight"
+                    type="number"
+                    value={taskWeight}
+                    onChange={(event) => setTaskWeight(event.target.value)}
+                    min="-100"
+                    max="100"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  Add task
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-              <label htmlFor="task-weight">
-                Weight
-                <input
-                  id="task-weight"
-                  type="number"
-                  value={taskWeight}
-                  onChange={(event) => setTaskWeight(event.target.value)}
-                  min="-100"
-                  max="100"
-                  step="0.01"
-                  placeholder="1.5"
-                  required
-                />
-              </label>
-
-              <button className="primary-action" type="submit" disabled={isSubmitting}>
-                Add task
-              </button>
-            </form>
-
-            <div className="pack-picker">
-              <h2>Add from pack</h2>
-              <label htmlFor="pack-select">
-                Pack
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Add from pack</CardTitle>
+              <CardDescription>Apply a saved task pack to this day</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="pack-select">Pack</Label>
                 <select
                   id="pack-select"
                   value={selectedPackId}
                   onChange={(event) => setSelectedPackId(event.target.value)}
+                  className="flex h-10 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">Select a pack</option>
                   {packs.map((pack) => (
@@ -277,63 +279,72 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
                     </option>
                   ))}
                 </select>
-              </label>
-              <button
-                className="secondary-action"
+              </div>
+              <Button
                 type="button"
+                variant="secondary"
+                className="w-full"
                 onClick={handleApplyPack}
                 disabled={isSubmitting || !selectedPackId}
               >
                 Apply pack
-              </button>
-            </div>
-          </section>
+              </Button>
+            </CardContent>
+          </Card>
+        </aside>
 
-          <section className="task-list-panel" aria-labelledby="task-list-title">
-            <h2 id="task-list-title">Tasks</h2>
+        <section aria-labelledby="task-list-title">
+          <Card>
+            <CardHeader>
+              <CardTitle id="task-list-title" className="flex items-center gap-2 text-base">
+                <ListTodo className="h-4 w-4" />
+                Tasks
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!canStartTimers && (
+                <Alert variant="warning">
+                  <AlertDescription>
+                    Timers can only be started for today. You can still view this day.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            {!canStartTimers && (
-              <p className="timer-note">
-                Timers can only be started for today. You can still view this day.
-              </p>
-            )}
+              {tasks.length === 0 ? (
+                <EmptyState
+                  icon={ListTodo}
+                  title="No tasks yet"
+                  description="Add a custom task or apply a pack to get started."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {tasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      elapsedSeconds={getTaskElapsedSeconds(task)}
+                      isActive={String(activeSession?.task_id) === String(task.id)}
+                      isSubmitting={isSubmitting}
+                      canStartTimers={canStartTimers}
+                      onStart={() => handleStartTimer(task.id)}
+                      onStop={() => handleStopTimer(task.id)}
+                      onDelete={() => handleDeleteTask(task.id)}
+                    />
+                  ))}
+                </div>
+              )}
 
-            {tasks.length === 0 ? (
-              <p className="empty-state">No tasks added for this day yet.</p>
-            ) : (
-              <div className="task-list">
-                {tasks.map((task) => {
-                const elapsedSeconds = getTaskElapsedSeconds(task)
-                const isActive = String(activeSession?.task_id) === String(task.id)
+              {pageStatus.message && (
+                <Alert variant={pageStatus.type === 'error' ? 'destructive' : 'success'}>
+                  <AlertDescription role="status">{pageStatus.message}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      </div>
 
-                return (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    elapsedSeconds={elapsedSeconds}
-                    isActive={isActive}
-                    isSubmitting={isSubmitting}
-                    canStartTimers={canStartTimers}
-                    onStart={() => handleStartTimer(task.id)}
-                    onStop={() => handleStopTimer(task.id)}
-                    onDelete={() => handleDeleteTask(task.id)}
-                  />
-                )
-              })}
-              </div>
-            )}
-
-            {pageStatus.message && (
-              <p className={`form-status ${pageStatus.type}`} role="status">
-                {pageStatus.message}
-              </p>
-            )}
-          </section>
-        </div>
-
-        <DailyPieChart date={date} refreshTrigger={chartRefreshTick} />
-      </section>
+      <DailyPieChart date={date} refreshTrigger={chartRefreshTick} />
     </ProtectedShell>
-
   )
 }

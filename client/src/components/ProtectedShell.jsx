@@ -1,10 +1,9 @@
-import NavBar from './NavBar'
+import AppLayout from './layout/AppLayout'
 
 export default function ProtectedShell({ user, onLogout, children }) {
   return (
-    <main className="protected-shell">
-      <NavBar userEmail={user.email} onLogout={onLogout} />
+    <AppLayout user={user} onLogout={onLogout}>
       {children}
-    </main>
+    </AppLayout>
   )
 }

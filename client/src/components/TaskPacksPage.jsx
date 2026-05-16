@@ -1,12 +1,31 @@
 import { useState, useEffect } from 'react'
+import { Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import ProtectedShell from './ProtectedShell'
+import PageHeader from './layout/PageHeader'
+import EmptyState from './shared/EmptyState'
 import { apiRequest } from '../utils/helpers'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function TaskPacksPage({ user, onLogout }) {
   const [packs, setPacks] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [formState, setFormState] = useState({ isOpen: false, isEdit: false, pack: null })
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchPacks()
@@ -25,16 +44,17 @@ export default function TaskPacksPage({ user, onLogout }) {
     }
   }
 
-  async function handleDelete(packId) {
-    if (!window.confirm('Are you sure you want to delete this pack?')) {
-      return
-    }
-
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return
     try {
-      await apiRequest(`/api/v1/packs/${packId}`, { method: 'DELETE' })
-      setPacks((prev) => prev.filter((p) => p.id !== packId))
+      setIsDeleting(true)
+      await apiRequest(`/api/v1/packs/${deleteTarget.id}`, { method: 'DELETE' })
+      setPacks((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+      setDeleteTarget(null)
     } catch (err) {
-      alert(`Could not delete pack: ${err.message}`)
+      setError(err.message)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -42,7 +62,7 @@ export default function TaskPacksPage({ user, onLogout }) {
     setFormState({
       isOpen: true,
       isEdit: false,
-      pack: { name: '', tasks: [{ name: '', weight: 1 }] }
+      pack: { name: '', tasks: [{ name: '', weight: 1 }] },
     })
   }
 
@@ -53,8 +73,10 @@ export default function TaskPacksPage({ user, onLogout }) {
       pack: {
         id: pack.id,
         name: pack.name,
-        tasks: pack.tasks.length ? pack.tasks.map(t => ({ id: t.id, name: t.name, weight: t.weight })) : [{ name: '', weight: 1 }]
-      }
+        tasks: pack.tasks.length
+          ? pack.tasks.map((t) => ({ id: t.id, name: t.name, weight: t.weight }))
+          : [{ name: '', weight: 1 }],
+      },
     })
   }
 
@@ -64,75 +86,144 @@ export default function TaskPacksPage({ user, onLogout }) {
 
   return (
     <ProtectedShell user={user} onLogout={onLogout}>
-      <section className="calendar-shell" aria-labelledby="packs-title">
-        <div className="calendar-heading">
-          <div>
-            <p className="eyebrow">Settings</p>
-            <h1 id="packs-title">Task Packs</h1>
-          </div>
-          <button type="button" className="primary-action" style={{ width: 'auto', padding: '0 24px', minHeight: '40px', marginTop: 0 }} onClick={openCreateForm}>
-            Create Pack
-          </button>
+      <PageHeader
+        eyebrow="Settings"
+        title="Task packs"
+        description="Create reusable task templates to apply to any day."
+        actions={
+          <Button type="button" onClick={openCreateForm}>
+            <Plus className="h-4 w-4" />
+            Create pack
+          </Button>
+        }
+      />
+
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
         </div>
-
-        {error && (
-          <p className="form-status error" style={{ marginBottom: '20px' }}>
-            {error}
-          </p>
-        )}
-
-        {isLoading ? (
-          <p className="empty-state">Loading packs...</p>
-        ) : packs.length === 0 && !formState.isOpen ? (
-          <p className="empty-state">No task packs found. Create one to get started.</p>
-        ) : !formState.isOpen ? (
-          <div className="packs-grid" style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-            {packs.map((pack) => (
-              <div key={pack.id} className="task-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <h3 style={{ margin: 0 }}>{pack.name}</h3>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" className="secondary-action" style={{ minHeight: '32px', padding: '0 12px' }} onClick={() => openEditForm(pack)}>Edit</button>
-                    <button type="button" className="secondary-action stop-action" style={{ minHeight: '32px', padding: '0 12px' }} onClick={() => handleDelete(pack.id)}>Delete</button>
+      ) : packs.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="No task packs yet"
+          description="Create a pack to quickly add groups of tasks to your day."
+          action={
+            <Button type="button" onClick={openCreateForm}>
+              <Plus className="h-4 w-4" />
+              Create pack
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {packs.map((pack) => (
+            <Card key={pack.id} className="flex flex-col">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base">{pack.name}</CardTitle>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditForm(pack)}
+                      aria-label={`Edit ${pack.name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(pack)}
+                      aria-label={`Delete ${pack.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div style={{ color: 'var(--text)', fontSize: '14px' }}>
+                <CardDescription>
                   {pack.tasks.length} task{pack.tasks.length !== 1 ? 's' : ''}
-                </div>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-h)', fontSize: '14px', width: '100%' }}>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <ul className="space-y-1 text-sm text-muted-foreground">
                   {pack.tasks.slice(0, 3).map((task) => (
-                    <li key={task.id || task.name}>{task.name} ({task.weight})</li>
+                    <li key={task.id || task.name}>
+                      {task.name}{' '}
+                      <span className="text-xs">(w: {task.weight})</span>
+                    </li>
                   ))}
                   {pack.tasks.length > 3 && (
-                    <li>...and {pack.tasks.length - 3} more</li>
+                    <li className="text-xs">+{pack.tasks.length - 3} more</li>
                   )}
                 </ul>
-              </div>
-            ))}
-          </div>
-        ) : null}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-        {formState.isOpen && (
-          <PackForm 
-            initialPack={formState.pack} 
-            isEdit={formState.isEdit} 
-            onClose={closeForm} 
-            onSuccess={() => {
-              closeForm()
-              fetchPacks()
-            }} 
-          />
-        )}
-      </section>
+      <PackFormDialog
+        open={formState.isOpen}
+        initialPack={formState.pack}
+        isEdit={formState.isEdit}
+        onClose={closeForm}
+        onSuccess={() => {
+          closeForm()
+          fetchPacks()
+        }}
+      />
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete pack?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete &quot;{deleteTarget?.name}&quot;. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ProtectedShell>
   )
 }
 
-function PackForm({ initialPack, isEdit, onClose, onSuccess }) {
-  const [name, setName] = useState(initialPack.name)
-  const [tasks, setTasks] = useState(initialPack.tasks)
+function PackFormDialog({ open, initialPack, isEdit, onClose, onSuccess }) {
+  const [name, setName] = useState('')
+  const [tasks, setTasks] = useState([{ name: '', weight: 1 }])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (open && initialPack) {
+      setName(initialPack.name)
+      setTasks(initialPack.tasks)
+      setError('')
+    }
+  }, [open, initialPack])
 
   function handleTaskChange(index, field, value) {
     const newTasks = [...tasks]
@@ -146,17 +237,14 @@ function PackForm({ initialPack, isEdit, onClose, onSuccess }) {
 
   function removeTask(index) {
     const newTasks = tasks.filter((_, i) => i !== index)
-    if (newTasks.length === 0) {
-      newTasks.push({ name: '', weight: 1 })
-    }
-    setTasks(newTasks)
+    setTasks(newTasks.length ? newTasks : [{ name: '', weight: 1 }])
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
 
-    const validTasks = tasks.filter(t => t.name.trim() !== '')
+    const validTasks = tasks.filter((t) => t.name.trim() !== '')
     if (validTasks.length === 0) {
       setError('At least one task with a name is required')
       return
@@ -164,11 +252,11 @@ function PackForm({ initialPack, isEdit, onClose, onSuccess }) {
 
     const payload = {
       name: name.trim(),
-      tasks: validTasks.map(t => ({
+      tasks: validTasks.map((t) => ({
         ...(t.id !== undefined && t.id !== null ? { id: Number(t.id) } : {}),
         name: t.name.trim(),
-        weight: Number(t.weight)
-      }))
+        weight: Number(t.weight),
+      })),
     }
 
     try {
@@ -176,12 +264,12 @@ function PackForm({ initialPack, isEdit, onClose, onSuccess }) {
       if (isEdit) {
         await apiRequest(`/api/v1/packs/${initialPack.id}`, {
           method: 'PUT',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         })
       } else {
         await apiRequest('/api/v1/packs', {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         })
       }
       onSuccess()
@@ -192,75 +280,84 @@ function PackForm({ initialPack, isEdit, onClose, onSuccess }) {
   }
 
   return (
-    <div className="task-form">
-      <h2>{isEdit ? 'Edit Pack' : 'Create Pack'}</h2>
-      {error && <p className="form-status error">{error}</p>}
-      
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px' }}>
-        <label>
-          Pack Name
-          <input 
-            type="text" 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-            required 
-            maxLength={255}
-          />
-        </label>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? 'Edit pack' : 'Create pack'}</DialogTitle>
+          <DialogDescription>
+            Define tasks and weights. Apply packs from any daily view.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div>
-          <label style={{ marginBottom: '8px' }}>Tasks</label>
-          <div style={{ display: 'grid', gap: '8px' }}>
-            {tasks.map((task, index) => (
-              <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 100px auto', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  placeholder="Task Name"
-                  value={task.name}
-                  onChange={(e) => handleTaskChange(index, 'name', e.target.value)}
-                  required={index === 0}
-                />
-                <input
-                  type="number"
-                  placeholder="Weight"
-                  min="-100"
-                  max="100"
-                  step="0.01"
-                  value={task.weight}
-                  onChange={(e) => handleTaskChange(index, 'weight', e.target.value)}
-                  required={index === 0}
-                />
-                <button 
-                  type="button" 
-                  className="secondary-action" 
-                  style={{ minHeight: '40px', padding: '0 12px', borderColor: 'var(--border)' }}
-                  onClick={() => removeTask(index)}
-                  title="Remove task"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="pack-name">Pack name</Label>
+            <Input
+              id="pack-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              maxLength={255}
+            />
           </div>
-          <button 
-            type="button" 
-            className="secondary-action" 
-            style={{ marginTop: '12px', width: '100%' }}
-            onClick={addTask}
-          >
-            + Add Task
-          </button>
-        </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-          <button type="submit" className="primary-action" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Pack'}
-          </button>
-          <button type="button" className="secondary-action" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="space-y-2">
+            <Label>Tasks</Label>
+            <div className="space-y-2">
+              {tasks.map((task, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-[1fr_100px_auto] gap-2 items-center"
+                >
+                  <Input
+                    placeholder="Task name"
+                    value={task.name}
+                    onChange={(e) => handleTaskChange(index, 'name', e.target.value)}
+                    required={index === 0}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Weight"
+                    min="-100"
+                    max="100"
+                    step="0.01"
+                    value={task.weight}
+                    onChange={(e) => handleTaskChange(index, 'weight', e.target.value)}
+                    required={index === 0}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removeTask(index)}
+                    aria-label="Remove task"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="secondary" className="w-full" onClick={addTask}>
+              + Add task
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Save pack'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
