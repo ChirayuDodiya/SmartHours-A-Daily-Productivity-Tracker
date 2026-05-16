@@ -8,11 +8,19 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
+function isLocalhostUrl(url) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(url);
+}
+
 function getCookieOptions() {
+    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const isLocalhost = isLocalhostUrl(frontendUrl);
+    const secure = process.env.NODE_ENV === 'production' && !isLocalhost;
+
     return {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        secure,
+        sameSite: secure ? 'none' : 'lax'
     };
 }
 
@@ -85,8 +93,8 @@ function sendAuthCookie(res, user) {
 }
 
 function getFrontendRedirectUrl() {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    return `${frontendUrl.replace(/\/$/, '')}/`;
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    return `${frontendUrl}/`;
 }
 
 async function register(req, res) {

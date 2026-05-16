@@ -13,12 +13,11 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-].filter(Boolean);
+const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+const allowedOrigins = [frontendUrl].filter(Boolean);
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: frontendUrl,
     credentials: true
 }));
 

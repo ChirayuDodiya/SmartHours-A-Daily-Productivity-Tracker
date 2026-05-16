@@ -165,7 +165,7 @@ function PackForm({ initialPack, isEdit, onClose, onSuccess }) {
     const payload = {
       name: name.trim(),
       tasks: validTasks.map(t => ({
-        ...(t.id ? { id: t.id } : {}),
+        ...(t.id !== undefined && t.id !== null ? { id: Number(t.id) } : {}),
         name: t.name.trim(),
         weight: Number(t.weight)
       }))

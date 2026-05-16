@@ -244,8 +244,8 @@ async function updatePack(req, res) {
 
         if (tasks !== null) {
             const existingTasks = await getPackTasks(packId);
-            const existingIds = existingTasks.map((task) => task.id);
-            const incomingIds = tasks.filter((task) => task.id !== null).map((task) => task.id);
+            const existingIds = existingTasks.map((task) => Number(task.id));
+            const incomingIds = tasks.filter((task) => task.id !== null).map((task) => Number(task.id));
 
             const invalidIds = incomingIds.filter((id) => !existingIds.includes(id));
 
