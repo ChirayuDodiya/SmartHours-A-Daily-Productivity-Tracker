@@ -86,6 +86,36 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!authState.user) {
+      return undefined
+    }
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+          credentials: 'include'
+        })
+
+        if (!response.ok) {
+          await handleLogout()
+          return
+        }
+
+        const data = await response.json()
+        if (!data?.user) {
+          await handleLogout()
+        }
+      } catch (error) {
+        await handleLogout()
+      }
+    }, 10000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [authState.user])
+
   async function handleSubmit(event) {
     event.preventDefault()
     setStatus({ type: '', message: '' })

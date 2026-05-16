@@ -8,14 +8,9 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
-function isLocalhostUrl(url) {
-    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(url);
-}
-
 function getCookieOptions() {
-    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-    const isLocalhost = isLocalhostUrl(frontendUrl);
-    const secure = process.env.NODE_ENV === 'production' && !isLocalhost;
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const secure = frontendUrl.startsWith('https://');
 
     return {
         httpOnly: true,

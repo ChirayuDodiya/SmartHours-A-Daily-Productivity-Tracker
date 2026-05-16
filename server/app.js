@@ -17,7 +17,21 @@ const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
 const allowedOrigins = [frontendUrl].filter(Boolean);
 
 app.use(cors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        callback(new Error('CORS origin not allowed'));
+    },
     credentials: true
 }));
 
