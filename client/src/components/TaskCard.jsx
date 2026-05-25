@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Play, Square, Trash2 } from 'lucide-react'
 import { formatDuration } from '../utils/helpers'
 import { Badge } from '@/components/ui/badge'
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-export default function TaskCard({
+function TaskCard({
   task,
   elapsedSeconds,
   isActive,
@@ -18,26 +19,29 @@ export default function TaskCard({
   return (
     <Card
       className={cn(
-        'transition-shadow',
-        isActive && 'border-primary shadow-md ring-1 ring-primary/20',
+        'transition-card shadow-card hover:shadow-card-hover',
+        isActive && 'border-primary/40 shadow-card-hover ring-1 ring-primary/25',
       )}
     >
-      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate font-medium text-foreground">{task.name}</h3>
-          <Badge variant="secondary" className="mt-2">
+      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="min-w-0 flex-1 space-y-2">
+          <h3 className="truncate text-base font-medium text-foreground">{task.name}</h3>
+          <Badge variant="secondary" className="font-normal">
             Weight {task.weight}
           </Badge>
         </div>
 
         <p
-          className="font-mono text-lg font-semibold tabular-nums text-foreground sm:text-right"
+          className={cn(
+            'font-mono text-xl font-semibold tabular-nums text-foreground sm:min-w-[7rem] sm:text-right',
+            isActive && 'text-primary',
+          )}
           aria-label="Elapsed time"
         >
           {formatDuration(elapsedSeconds)}
         </p>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <Button
             type="button"
             size="sm"
@@ -72,3 +76,5 @@ export default function TaskCard({
     </Card>
   )
 }
+
+export default memo(TaskCard)

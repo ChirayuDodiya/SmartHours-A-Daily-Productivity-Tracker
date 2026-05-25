@@ -52,10 +52,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                   onNavigate?.()
                 }}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    : 'text-muted-foreground hover:bg-accent/80 hover:text-foreground',
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -82,7 +82,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card transition-transform duration-200 lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-[17.5rem] flex-col border-r border-border bg-card shadow-card transition-transform duration-200 ease-out lg:static lg:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
       >

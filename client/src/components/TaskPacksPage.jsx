@@ -86,6 +86,7 @@ export default function TaskPacksPage({ user, onLogout }) {
 
   return (
     <ProtectedShell user={user} onLogout={onLogout}>
+      <div className="page-stack">
       <PageHeader
         eyebrow="Settings"
         title="Task packs"
@@ -125,7 +126,7 @@ export default function TaskPacksPage({ user, onLogout }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {packs.map((pack) => (
-            <Card key={pack.id} className="flex flex-col">
+            <Card key={pack.id} className="flex flex-col transition-card hover:shadow-card-hover">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base">{pack.name}</CardTitle>
@@ -207,6 +208,7 @@ export default function TaskPacksPage({ user, onLogout }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </ProtectedShell>
   )
 }

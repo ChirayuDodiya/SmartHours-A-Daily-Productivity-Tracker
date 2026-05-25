@@ -14,6 +14,7 @@ import EmptyState from './shared/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import StatCard from './shared/StatCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -166,7 +167,10 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
     setIsSubmitting(true)
     setPageStatus({ type: '', message: '' })
     try {
-      const data = await apiRequest(`/api/v1/tasks/${taskId}/start`, { method: 'POST' })
+      const data = await apiRequest(`/api/v1/tasks/${taskId}/start`, {
+        method: 'POST',
+        body: JSON.stringify({ clientDate: date }),
+      })
       setActiveSession(data.active_session)
       setNowTick((currentTick) => currentTick + 1)
       await refreshTasks()
@@ -194,7 +198,8 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
 
   return (
     <ProtectedShell user={user} onLogout={onLogout}>
-      <Button type="button" variant="ghost" size="sm" className="mb-4 -ml-2 gap-1" onClick={onBack}>
+      <div className="page-stack">
+      <Button type="button" variant="ghost" size="sm" className="-ml-2 w-fit gap-1 text-muted-foreground hover:text-foreground" onClick={onBack}>
         <ArrowLeft className="h-4 w-4" />
         Calendar
       </Button>
@@ -203,20 +208,15 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
         eyebrow="Daily view"
         title={formatDateHeading(date)}
         actions={
-          <Card className="min-w-[140px] border-primary/20 bg-primary/5">
-            <CardContent className="p-4 text-right">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Total score
-              </p>
-              <p className="text-3xl font-bold tabular-nums text-foreground">
-                {totalScore.toFixed(1)}
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard label="Total score" className="min-w-[9rem] text-right">
+            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {totalScore.toFixed(1)}
+            </p>
+          </StatCard>
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(280px,320px)_1fr]">
         <aside className="space-y-4" aria-label="Add tasks">
           <Card>
             <CardHeader>
@@ -270,7 +270,7 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
                   id="pack-select"
                   value={selectedPackId}
                   onChange={(event) => setSelectedPackId(event.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="native-select"
                 >
                   <option value="">Select a pack</option>
                   {packs.map((pack) => (
@@ -344,7 +344,12 @@ export default function DailyPageShell({ date, user, onBack, onLogout }) {
         </section>
       </div>
 
-      <DailyPieChart date={date} refreshTrigger={chartRefreshTick} />
+      <DailyPieChart
+        key={`${date}-${chartRefreshTick}`}
+        date={date}
+        refreshTrigger={chartRefreshTick}
+      />
+      </div>
     </ProtectedShell>
   )
 }

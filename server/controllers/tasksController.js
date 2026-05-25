@@ -331,7 +331,22 @@ async function startTaskTimer(req, res) {
             });
         }
 
-        if (tasks[0].date !== getCurrentDateKey()) {
+        let dateToCheck = getCurrentDateKey();
+        const clientDate = req.body.clientDate || req.body.date;
+        if (clientDate && isValidDate(clientDate)) {
+            // Check if the client date is within 2 days of the server's current date.
+            // This timezone-agnostic check handles clients globally (e.g. up to UTC+14 / UTC-12)
+            // while preventing arbitrary dates in the past or future.
+            const serverTime = new Date();
+            const clientTime = new Date(`${clientDate}T12:00:00Z`);
+            const diffTime = Math.abs(serverTime.getTime() - clientTime.getTime());
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            if (diffDays <= 2) {
+                dateToCheck = clientDate;
+            }
+        }
+
+        if (tasks[0].date !== dateToCheck) {
             return res.status(400).json({
                 success: false,
                 message: 'Timers can only be started for the current date'

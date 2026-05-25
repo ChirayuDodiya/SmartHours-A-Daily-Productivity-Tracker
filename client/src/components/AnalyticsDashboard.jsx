@@ -1,16 +1,9 @@
 import { useState, useEffect } from 'react'
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
 import ProtectedShell from './ProtectedShell'
 import PageHeader from './layout/PageHeader'
 import SharedBarChart from './SharedBarChart'
 import ChartPanel from './shared/ChartPanel'
+import OptimizedPieChart from './charts/OptimizedPieChart'
 import { apiRequest } from '../utils/helpers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,17 +11,6 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-const COLORS = [
-  'hsl(192 45% 45%)',
-  'hsl(262 52% 55%)',
-  'hsl(142 55% 45%)',
-  'hsl(38 80% 50%)',
-  'hsl(199 70% 48%)',
-  'hsl(346 65% 55%)',
-  'hsl(221 60% 55%)',
-  'hsl(168 55% 42%)',
-]
 
 export default function AnalyticsDashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('weekly')
@@ -89,110 +71,77 @@ export default function AnalyticsDashboard({ user, onLogout }) {
 
   return (
     <ProtectedShell user={user} onLogout={onLogout}>
-      <PageHeader
-        eyebrow="Reports"
-        title="Analytics"
-        description="Review productivity trends across weeks, months, and custom ranges."
-      />
+      <div className="page-stack">
+        <PageHeader
+          eyebrow="Reports"
+          title="Analytics"
+          description="Review productivity trends across weeks, months, and custom ranges."
+        />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="mb-6 flex h-auto flex-wrap gap-1">
-          {['weekly', 'monthly', 'yearly', 'custom'].map((tab) => (
-            <TabsTrigger key={tab} value={tab} className="capitalize">
-              {tab}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="mb-2 grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:w-auto sm:grid-cols-none">
+            {['weekly', 'monthly', 'yearly', 'custom'].map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="capitalize">
+                {tab}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        <TabsContent value="custom">
-          <Card className="mb-6">
-            <CardContent className="flex flex-wrap items-end gap-4 p-6">
-              <div className="min-w-[150px] flex-1 space-y-2">
-                <Label htmlFor="from-date">From date</Label>
-                <Input
-                  id="from-date"
-                  type="date"
-                  value={customRange.from}
-                  onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
-                />
-              </div>
-              <div className="min-w-[150px] flex-1 space-y-2">
-                <Label htmlFor="to-date">To date</Label>
-                <Input
-                  id="to-date"
-                  type="date"
-                  value={customRange.to}
-                  onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
-                />
-              </div>
-              <Button type="button" onClick={handleGenerateCustom}>
-                Generate
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="custom" className="mt-0">
+            <Card className="shadow-card">
+              <CardContent className="grid gap-4 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:gap-4 sm:p-6">
+                <div className="form-field">
+                  <Label htmlFor="from-date">From date</Label>
+                  <Input
+                    id="from-date"
+                    type="date"
+                    value={customRange.from}
+                    onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
+                  />
+                </div>
+                <div className="form-field">
+                  <Label htmlFor="to-date">To date</Label>
+                  <Input
+                    id="to-date"
+                    type="date"
+                    value={customRange.to}
+                    onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
+                  />
+                </div>
+                <Button type="button" className="w-full sm:w-auto" onClick={handleGenerateCustom}>
+                  Generate
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <ChartPanel
-        title={chartTitle}
-        description={chartDescription}
-        isLoading={isLoading && activeTab !== 'custom'}
-        error={!isLoading ? error : ''}
-        isEmpty={!isLoading && !error && !hasData}
-        emptyDescription={
-          activeTab === 'custom'
-            ? 'Select a date range and click generate.'
-            : 'Complete tasks to see your progress here.'
-        }
-      >
-        {activeTab === 'custom' ? (
-          <ResponsiveContainer width="100%" height={360}>
-            <PieChart>
-              <Pie
-                data={data.filter((item) => Number(item.total_seconds) > 0)}
-                dataKey="total_seconds"
-                nameKey="task_name"
-                cx="50%"
-                cy="50%"
-                innerRadius={65}
-                outerRadius={105}
-                paddingAngle={3}
-              >
-                {data
-                  .filter((item) => Number(item.total_seconds) > 0)
-                  .map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                      stroke="hsl(var(--border))"
-                      strokeWidth={1}
-                    />
-                  ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  borderRadius: '0.5rem',
-                  border: '1px solid hsl(var(--border))',
-                  background: 'hsl(var(--card))',
-                }}
-                formatter={(value, name, props) => {
-                  const pts = props.payload.points
-                  return [`${(value / 3600).toFixed(2)}h (${pts} pts)`, name]
-                }}
-              />
-              <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: 20 }} iconType="circle" />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <SharedBarChart data={data} isLoading={isLoading} activeTab={activeTab} />
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-      </ChartPanel>
+
+        <ChartPanel
+          title={chartTitle}
+          description={chartDescription}
+          isLoading={isLoading && activeTab !== 'custom'}
+          error={!isLoading ? error : ''}
+          isEmpty={!isLoading && !error && !hasData}
+          className="mt-0"
+          emptyDescription={
+            activeTab === 'custom'
+              ? 'Select a date range and click generate.'
+              : 'Complete tasks to see your progress here.'
+          }
+        >
+          {activeTab === 'custom' ? (
+            <OptimizedPieChart data={data} variant="analytics" />
+          ) : (
+            <SharedBarChart data={data} isLoading={isLoading} activeTab={activeTab} />
+          )}
+        </ChartPanel>
+      </div>
     </ProtectedShell>
   )
 }

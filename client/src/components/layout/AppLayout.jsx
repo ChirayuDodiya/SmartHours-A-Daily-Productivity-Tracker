@@ -19,7 +19,7 @@ export default function AppLayout({ user, onLogout, children }) {
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-md lg:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/75 lg:px-6">
           <Button
             type="button"
             variant="ghost"
@@ -58,7 +58,7 @@ export default function AppLayout({ user, onLogout, children }) {
         </header>
 
         <main className="flex-1 overflow-auto">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8 animate-in-fade">
+          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8 animate-in-fade">
             {children}
           </div>
         </main>

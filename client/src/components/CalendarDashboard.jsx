@@ -91,6 +91,7 @@ export default function CalendarDashboard({ user, onLogout }) {
 
   return (
     <ProtectedShell user={user} onLogout={onLogout}>
+      <div className="page-stack">
       <PageHeader
         eyebrow="Dashboard"
         title="Productivity calendar"
@@ -138,7 +139,7 @@ export default function CalendarDashboard({ user, onLogout }) {
         <Skeleton className="h-[420px] w-full rounded-xl" />
       ) : (
         <div
-          className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+          className="overflow-hidden rounded-xl border border-border bg-card shadow-card"
           role="grid"
           aria-label="Month calendar"
         >
@@ -173,7 +174,7 @@ export default function CalendarDashboard({ user, onLogout }) {
                   aria-current={isToday ? 'date' : undefined}
                   onClick={() => navigateTo(`/day/${key}`)}
                   className={cn(
-                    'relative flex min-h-[72px] flex-col items-start justify-between border-b border-r border-border p-2 text-left transition-colors hover:bg-accent/50 sm:min-h-[88px] sm:p-3',
+                    'relative flex min-h-[4.5rem] flex-col items-start justify-between border-b border-r border-border p-2 text-left transition-colors duration-150 hover:bg-accent/60 sm:min-h-[5.5rem] sm:p-3',
                     !isCurrentMonth && 'bg-muted/30 text-muted-foreground',
                     isToday && 'bg-primary/5 ring-2 ring-inset ring-primary',
                     isFuture && 'text-muted-foreground',
@@ -205,10 +206,11 @@ export default function CalendarDashboard({ user, onLogout }) {
       )}
 
       {scoreError && (
-        <Alert variant="destructive" className="mt-4">
+        <Alert variant="destructive">
           <AlertDescription role="status">{scoreError}</AlertDescription>
         </Alert>
       )}
+      </div>
     </ProtectedShell>
   )
 }

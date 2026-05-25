@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import EmptyState from './EmptyState'
 import { BarChart3 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { CHART_HEIGHT } from '../charts/chartTheme'
 
 export default function ChartPanel({
   title,
@@ -12,23 +14,21 @@ export default function ChartPanel({
   emptyTitle = 'No data available',
   emptyDescription,
   children,
+  className,
 }) {
   return (
-    <Card className="mt-8">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className={cn('mt-8 overflow-hidden', className)}>
+      <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
+        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent>
-        <div className="relative min-h-[320px]">
+      <CardContent className="p-4 sm:p-6">
+        <div className="relative min-h-[280px] sm:min-h-[320px]">
           {isLoading && (
-            <div className="flex h-[320px] flex-col items-center justify-center gap-3">
-              <Skeleton className="h-48 w-full max-w-md" />
-              <Skeleton className="h-4 w-32" />
-            </div>
+            <ChartSkeleton />
           )}
           {!isLoading && error && (
-            <p className="py-12 text-center text-sm text-destructive" role="alert">
+            <p className="py-16 text-center text-sm text-destructive" role="alert">
               {error}
             </p>
           )}
@@ -37,12 +37,29 @@ export default function ChartPanel({
               icon={BarChart3}
               title={emptyTitle}
               description={emptyDescription}
-              className="border-none bg-transparent"
+              className="border-none bg-transparent py-10"
             />
           )}
           {!isLoading && !error && !isEmpty && children}
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function ChartSkeleton() {
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-4 py-6"
+      style={{ minHeight: CHART_HEIGHT.pie }}
+      aria-hidden="true"
+    >
+      <Skeleton className="h-44 w-44 rounded-full" />
+      <div className="flex flex-wrap justify-center gap-3">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-28" />
+      </div>
+    </div>
   )
 }
