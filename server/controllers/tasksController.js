@@ -183,10 +183,11 @@ async function getTasksByDate(req, res) {
 
 async function createTask(req, res) {
     try {
-        const { date } = req.body;
-        const name = normalizeTaskName(req.body.name);
-        const weight = parseWeight(req.body.weight);
-        const packId = parseOptionalId(req.body.pack_id);
+        const body = req.body || {};
+        const { date } = body;
+        const name = normalizeTaskName(body.name);
+        const weight = parseWeight(body.weight);
+        const packId = parseOptionalId(body.pack_id);
 
         if (!isValidDate(date) || !name || weight === null || packId === undefined) {
             return res.status(400).json({
@@ -332,7 +333,7 @@ async function startTaskTimer(req, res) {
         }
 
         let dateToCheck = getCurrentDateKey();
-        const clientDate = req.body.clientDate || req.body.date;
+        const clientDate = req.body ? (req.body.clientDate || req.body.date) : null;
         if (clientDate && isValidDate(clientDate)) {
             // Check if the client date is within 2 days of the server's current date.
             // This timezone-agnostic check handles clients globally (e.g. up to UTC+14 / UTC-12)

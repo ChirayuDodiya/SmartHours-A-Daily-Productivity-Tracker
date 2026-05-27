@@ -78,8 +78,9 @@ async function getPackTasks(packId) {
 }
 
 async function createPack(req, res) {
-    const packName = normalizePackName(req.body.name);
-    const incomingTasks = Array.isArray(req.body.tasks) ? req.body.tasks : [];
+    const body = req.body || {};
+    const packName = normalizePackName(body.name);
+    const incomingTasks = Array.isArray(body.tasks) ? body.tasks : [];
 
     if (!packName || packName.length > 255) {
         return res.status(400).json({
@@ -186,8 +187,9 @@ async function updatePack(req, res) {
         });
     }
 
-    const updateName = req.body.name !== undefined;
-    const packName = normalizePackName(req.body.name);
+    const body = req.body || {};
+    const updateName = body.name !== undefined;
+    const packName = normalizePackName(body.name);
 
     if (updateName && (!packName || packName.length > 255)) {
         return res.status(400).json({
@@ -198,8 +200,8 @@ async function updatePack(req, res) {
 
     let tasks = null;
 
-    if (req.body.tasks !== undefined) {
-        if (!Array.isArray(req.body.tasks)) {
+    if (body.tasks !== undefined) {
+        if (!Array.isArray(body.tasks)) {
             return res.status(400).json({
                 success: false,
                 message: 'Tasks must be an array'
@@ -208,8 +210,8 @@ async function updatePack(req, res) {
 
         tasks = [];
 
-        for (let index = 0; index < req.body.tasks.length; index += 1) {
-            const item = req.body.tasks[index] || {};
+        for (let index = 0; index < body.tasks.length; index += 1) {
+            const item = body.tasks[index] || {};
             const taskId = parsePackTaskId(item.id);
 
             if (item.id !== undefined && taskId === undefined) {

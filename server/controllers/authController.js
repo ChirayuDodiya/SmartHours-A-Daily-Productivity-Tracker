@@ -94,8 +94,9 @@ function getFrontendRedirectUrl() {
 
 async function register(req, res) {
     try {
-        const email = normalizeEmail(req.body.email);
-        const { password } = req.body;
+        const body = req.body || {};
+        const email = normalizeEmail(body.email);
+        const { password } = body;
 
         if (!isValidEmail(email) || !validatePassword(password)) {
             return res.status(400).json({
@@ -140,8 +141,9 @@ async function register(req, res) {
 
 async function login(req, res) {
     try {
-        const email = normalizeEmail(req.body.email);
-        const { password } = req.body;
+        const body = req.body || {};
+        const email = normalizeEmail(body.email);
+        const { password } = body;
 
         if (!isValidEmail(email) || typeof password !== 'string') {
             return res.status(400).json({
