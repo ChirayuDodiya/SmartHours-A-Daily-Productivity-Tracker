@@ -98,7 +98,9 @@ function App() {
         })
 
         if (!response.ok) {
-          await handleLogout()
+          if (response.status === 401) {
+            await handleLogout()
+          }
           return
         }
 
@@ -107,7 +109,7 @@ function App() {
           await handleLogout()
         }
       } catch (error) {
-        await handleLogout()
+        console.error('Auth check failed:', error)
       }
     }, 10000)
 
