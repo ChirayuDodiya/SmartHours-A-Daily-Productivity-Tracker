@@ -13,8 +13,15 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-const allowedOrigins = [frontendUrl].filter(Boolean);
+const rawFrontendUrl = process.env.FRONTEND_URL || '';
+const allowedOrigins = rawFrontendUrl
+    .split(',')
+    .map(url => url.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+    console.warn('[CORS Warning] FRONTEND_URL is not set in environment variables. Requests from web browsers will be blocked.');
+}
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -26,10 +33,20 @@ app.use(cors({
             return callback(null, true);
         }
 
-        if (allowedOrigins.includes(origin)) {
+        const normalizedOrigin = origin.replace(/\/$/, '');
+        if (allowedOrigins.includes(normalizedOrigin)) {
             return callback(null, true);
         }
 
+        // Allow Vercel preview deployments if configured domain is a vercel.app domain
+        const isVercelAllowed = allowedOrigins.some(allowed =>
+            allowed.includes('vercel.app') && normalizedOrigin.endsWith('.vercel.app')
+        );
+        if (isVercelAllowed) {
+            return callback(null, true);
+        }
+
+        console.warn(`[CORS Blocked] Origin "${origin}" not allowed. Configured FRONTEND_URL: "${rawFrontendUrl}"`);
         callback(new Error('CORS origin not allowed'));
     },
     credentials: true
