@@ -1,7 +1,8 @@
 import { memo, useEffect, useState } from 'react'
 import { apiRequest } from '../utils/helpers'
-import ChartPanel from './shared/ChartPanel'
 import OptimizedPieChart from './charts/OptimizedPieChart'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PieChart as PieChartIcon } from 'lucide-react'
 
 function DailyPieChart({ date, refreshTrigger }) {
   const [data, setData] = useState([])
@@ -31,19 +32,53 @@ function DailyPieChart({ date, refreshTrigger }) {
 
   const hasData = data.some((item) => Number(item.total_seconds) > 0)
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 min-h-[260px] rounded-2xl border border-border/70 bg-card">
+        <Skeleton className="h-40 w-40 rounded-full" />
+        <Skeleton className="mt-4 h-3 w-32" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 min-h-[260px] rounded-2xl border border-destructive/20 bg-destructive/5 text-destructive text-sm text-center">
+        <p>{error}</p>
+      </div>
+    )
+  }
+
+  if (!hasData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 min-h-[260px] rounded-2xl border border-dashed border-border/80 bg-muted/20 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-muted-foreground mb-3">
+          <PieChartIcon className="h-6 w-6" />
+        </div>
+        <p className="text-sm font-semibold text-foreground">No focus time logged yet</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+          Start a task timer above to see your time breakdown and share percentages.
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <ChartPanel
-      title="Daily breakdown"
-      description="Time distribution and points earned per task"
-      isLoading={loading}
-      error={error}
-      isEmpty={!loading && !error && !hasData}
-      emptyTitle="No sessions yet"
-      emptyDescription="Start and complete a task timer to visualize your breakdown."
-      className="mt-0"
-    >
-      <OptimizedPieChart data={data} variant="daily" />
-    </ChartPanel>
+    <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-card">
+      <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2">
+          <PieChartIcon className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-bold tracking-tight text-foreground">
+            Focus Breakdown
+          </h3>
+        </div>
+        <span className="text-xs text-muted-foreground">Hover slices for % share</span>
+      </div>
+
+      <div className="pt-2">
+        <OptimizedPieChart data={data} variant="daily" height={250} />
+      </div>
+    </div>
   )
 }
 

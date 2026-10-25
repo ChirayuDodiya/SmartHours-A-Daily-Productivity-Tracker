@@ -7,7 +7,9 @@ async function getActiveSession(req, res) {
                 task_sessions.id,
                 task_sessions.task_id,
                 task_sessions.start_time,
-                TO_CHAR(tasks.date, 'YYYY-MM-DD') AS date
+                TO_CHAR(tasks.date, 'YYYY-MM-DD') AS date,
+                tasks.name AS task_name,
+                tasks.weight AS task_weight
             FROM task_sessions
             JOIN tasks ON tasks.id = task_sessions.task_id
             WHERE tasks.user_id = ${req.user.id}

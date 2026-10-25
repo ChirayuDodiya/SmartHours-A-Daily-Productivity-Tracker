@@ -13,20 +13,20 @@ import { DailyPieTooltip, AnalyticsPieTooltip } from './PieChartTooltip'
 const LegendContent = memo(function LegendContent({ payload }) {
   if (!payload?.length) return null
   return (
-    <ul className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 px-2">
+    <ul className="mt-3 flex flex-wrap justify-center gap-x-3.5 gap-y-1.5 px-2">
       {payload.map((entry) => {
         return (
           <li
             key={entry.value}
-            className="flex max-w-[220px] items-center gap-2 text-xs text-muted-foreground"
+            className="flex max-w-[200px] items-center gap-1.5 text-xs text-muted-foreground"
           >
             <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: entry.color }}
               aria-hidden="true"
             />
-            <span className="truncate">
-              <span className="font-medium text-foreground">{entry.value}</span>
+            <span className="truncate font-medium text-foreground">
+              {entry.value}
             </span>
           </li>
         )
@@ -57,7 +57,7 @@ function OptimizedPieChartInner({
       aria-label="Task time breakdown chart"
     >
       <ResponsiveContainer width="100%" height="100%" debounce={32}>
-        <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+        <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
           <Pie
             key={dataKey}
             data={chartData}
@@ -72,8 +72,8 @@ function OptimizedPieChartInner({
             animationDuration={PIE_CONFIG.animationDuration}
             animationEasing={PIE_CONFIG.animationEasing}
             animationBegin={PIE_CONFIG.animationBegin}
-            stroke="hsl(var(--border))"
-            strokeWidth={1}
+            stroke="hsl(var(--card))"
+            strokeWidth={2}
           >
             {chartData.map((entry, index) => (
               <Cell

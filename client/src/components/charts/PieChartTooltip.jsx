@@ -3,17 +3,8 @@ import { formatDuration } from '@/utils/helpers'
 
 function TooltipCard({ children }) {
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-md">
+    <div className="rounded-xl border border-border/80 bg-card/95 px-3.5 py-2.5 shadow-xl backdrop-blur-md">
       {children}
-    </div>
-  )
-}
-
-function TooltipRow({ label, value }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums text-foreground">{value}</dd>
     </div>
   )
 }
@@ -25,14 +16,23 @@ export const AnalyticsPieTooltip = memo(function AnalyticsPieTooltip({ active, p
   const pts = item.payload?.points
   return (
     <TooltipCard>
-      <p className="mb-2 border-b border-border pb-1.5 text-sm font-semibold text-foreground">
+      <p className="mb-1 text-sm font-semibold tracking-tight text-foreground">
         {item.name}
       </p>
-      <dl className="space-y-1 text-xs">
-        <TooltipRow label="Time" value={formatDuration(item.value)} />
-        <TooltipRow label="Share" value={`${percent}%`} />
-        {pts != null && <TooltipRow label="Points" value={String(pts)} />}
-      </dl>
+      <div className="flex items-baseline gap-2">
+        <span className="text-xl font-bold tracking-tight text-primary">
+          {percent}%
+        </span>
+        <span className="text-xs text-muted-foreground">share</span>
+      </div>
+      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+        <span>{formatDuration(item.value)}</span>
+        {pts != null && (
+          <span className="font-semibold text-foreground/90 font-mono-numbers">
+            +{pts} pts
+          </span>
+        )}
+      </div>
     </TooltipCard>
   )
 })
@@ -41,17 +41,26 @@ export const DailyPieTooltip = memo(function DailyPieTooltip({ active, payload }
   if (!active || !payload?.length) return null
   const item = payload[0]
   const data = item.payload
-  const percent = item.percent != null ? (item.percent * 100).toFixed(1) : data.pct
+  const percent = item.percent != null ? (item.percent * 100).toFixed(1) : (data.pct ?? '0.0')
   return (
     <TooltipCard>
-      <p className="mb-2 border-b border-border pb-1.5 text-sm font-semibold text-foreground">
+      <p className="mb-1 text-sm font-semibold tracking-tight text-foreground">
         {data.task_name}
       </p>
-      <dl className="space-y-1 text-xs">
-        <TooltipRow label="Time" value={formatDuration(data.total_seconds)} />
-        <TooltipRow label="Share" value={`${percent}%`} />
-        {data.points != null && <TooltipRow label="Points" value={String(data.points)} />}
-      </dl>
+      <div className="flex items-baseline gap-2">
+        <span className="text-xl font-bold tracking-tight text-primary">
+          {percent}%
+        </span>
+        <span className="text-xs text-muted-foreground">of today</span>
+      </div>
+      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+        <span>{formatDuration(data.total_seconds)}</span>
+        {data.points != null && (
+          <span className="font-semibold text-foreground/90 font-mono-numbers">
+            +{data.points} pts
+          </span>
+        )}
+      </div>
     </TooltipCard>
   )
 })

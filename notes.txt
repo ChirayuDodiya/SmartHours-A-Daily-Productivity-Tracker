@@ -1,0 +1,5 @@
+module 10->point 3 arrived
+
+on hover on a slice of pie chart it should display the task name and percentage ,not seconds
+-> make daily tasks 2 column
+ ->move that packs option as horizontal bar and that pie chart should next to points

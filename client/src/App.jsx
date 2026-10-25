@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import AuthPage from './components/AuthPage'
 import LoadingScreen from './components/shared/LoadingScreen'
-import DailyPageShell from './components/DailyPageShell'
-import CalendarDashboard from './components/CalendarDashboard'
-import TaskPacksPage from './components/TaskPacksPage'
-import AnalyticsDashboard from './components/AnalyticsDashboard'
 import { getRoutePath, navigateTo } from './utils/helpers'
 import { API_URL } from './utils/constants'
+
+const DailyPageShell = lazy(() => import('./components/DailyPageShell'))
+const CalendarDashboard = lazy(() => import('./components/CalendarDashboard'))
+const TaskPacksPage = lazy(() => import('./components/TaskPacksPage'))
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'))
 
 function App() {
   const [authState, setAuthState] = useState({
@@ -14,6 +15,7 @@ function App() {
     user: null,
   })
   const [routePath, setRoutePath] = useState(getRoutePath)
+  const [activeSession, setActiveSession] = useState(null)
   const [mode, setMode] = useState(() => {
     return window.location.pathname.toLowerCase().includes('register')
       ? 'register'
@@ -86,6 +88,27 @@ function App() {
     }
   }, [])
 
+  // Check active session whenever user is authenticated
+  useEffect(() => {
+    if (!authState.user) {
+      return
+    }
+
+    fetch(`${API_URL}/api/v1/sessions/active`, {
+      credentials: 'include',
+    })
+      .then(async (res) => {
+        if (!res.ok) return null
+        return res.json()
+      })
+      .then((data) => {
+        if (data?.active_session) {
+          setActiveSession(data.active_session)
+        }
+      })
+      .catch(() => {})
+  }, [authState.user])
+
   useEffect(() => {
     if (!authState.user) {
       return undefined
@@ -94,7 +117,7 @@ function App() {
     const intervalId = window.setInterval(async () => {
       try {
         const response = await fetch(`${API_URL}/auth/me`, {
-          credentials: 'include'
+          credentials: 'include',
         })
 
         if (!response.ok) {
@@ -172,10 +195,23 @@ function App() {
     })
 
     setAuthState({ isChecking: false, user: null })
+    setActiveSession(null)
     localStorage.removeItem('smarthours_token')
     setEmail('')
     setPassword('')
     setStatus({ type: '', message: '' })
+  }
+
+  async function handleStopActiveTimer(taskId) {
+    try {
+      await fetch(`${API_URL}/api/v1/tasks/${taskId}/stop`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      setActiveSession(null)
+    } catch (err) {
+      console.error('Stop active timer failed:', err)
+    }
   }
 
   if (authState.isChecking) {
@@ -185,26 +221,41 @@ function App() {
   if (authState.user) {
     const dayMatch = routePath.match(/^\/day\/(\d{4}-\d{2}-\d{2})$/)
 
-    if (dayMatch) {
-      return (
-        <DailyPageShell
-          date={dayMatch[1]}
-          user={authState.user}
-          onBack={() => navigateTo('/')}
-          onLogout={handleLogout}
-        />
-      )
-    }
-
-    if (routePath === '/packs') {
-      return <TaskPacksPage user={authState.user} onLogout={handleLogout} />
-    }
-
-    if (routePath === '/analytics') {
-      return <AnalyticsDashboard user={authState.user} onLogout={handleLogout} />
-    }
-
-    return <CalendarDashboard user={authState.user} onLogout={handleLogout} />
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        {dayMatch ? (
+          <DailyPageShell
+            date={dayMatch[1]}
+            user={authState.user}
+            onBack={() => navigateTo('/')}
+            onLogout={handleLogout}
+            activeSession={activeSession}
+            onStopActiveTimer={handleStopActiveTimer}
+          />
+        ) : routePath === '/packs' ? (
+          <TaskPacksPage
+            user={authState.user}
+            onLogout={handleLogout}
+            activeSession={activeSession}
+            onStopActiveTimer={handleStopActiveTimer}
+          />
+        ) : routePath === '/analytics' ? (
+          <AnalyticsDashboard
+            user={authState.user}
+            onLogout={handleLogout}
+            activeSession={activeSession}
+            onStopActiveTimer={handleStopActiveTimer}
+          />
+        ) : (
+          <CalendarDashboard
+            user={authState.user}
+            onLogout={handleLogout}
+            activeSession={activeSession}
+            onStopActiveTimer={handleStopActiveTimer}
+          />
+        )}
+      </Suspense>
+    )
   }
 
   return (

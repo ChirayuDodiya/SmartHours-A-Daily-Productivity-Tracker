@@ -1,41 +1,41 @@
-/** Shared palette and Recharts tuning for consistent, performant charts. */
+/** Shared palette and Recharts tuning for consistent, performant, vibrant charts. */
 export const CHART_COLORS = [
-  'hsl(192 45% 45%)',
-  'hsl(262 52% 55%)',
-  'hsl(142 55% 45%)',
-  'hsl(38 80% 50%)',
-  'hsl(199 70% 48%)',
-  'hsl(346 65% 55%)',
-  'hsl(221 60% 55%)',
-  'hsl(168 55% 42%)',
+  '#38bdf8', // Luminous sky
+  '#a855f7', // Electric violet
+  '#34d399', // Radiant emerald
+  '#fbbf24', // Warm amber
+  '#818cf8', // Indigo glow
+  '#f472b6', // Rose
+  '#2dd4bf', // Teal flow
+  '#fb923c', // Warm tangerine
 ]
 
 export const PIE_CONFIG = {
-  innerRadius: '58%',
-  outerRadius: '82%',
-  paddingAngle: 2,
+  innerRadius: '62%',
+  outerRadius: '86%',
+  paddingAngle: 3,
   cx: '50%',
-  cy: '46%',
-  /** Short, GPU-friendly entrance; avoids long fill lag. */
-  animationDuration: 380,
-  animationEasing: 'ease-out',
+  cy: '50%',
+  animationDuration: 400,
+  animationEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',
   animationBegin: 0,
 }
 
 export const CHART_HEIGHT = {
-  pie: 340,
+  pie: 280,
   bar: 320,
 }
 
 export const CHART_TOOLTIP_STYLE = {
-  borderRadius: '0.625rem',
+  borderRadius: '0.75rem',
   border: '1px solid hsl(var(--border))',
   background: 'hsl(var(--card))',
-  boxShadow: '0 4px 12px hsl(222 47% 11% / 0.08)',
+  boxShadow: '0 10px 25px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
   fontSize: 13,
+  padding: '10px 14px',
 }
 
-export const CHART_MARGIN = { top: 12, right: 16, left: 0, bottom: 8 }
+export const CHART_MARGIN = { top: 16, right: 16, left: -10, bottom: 8 }
 
 export function filterPieData(data) {
   if (!Array.isArray(data)) return []

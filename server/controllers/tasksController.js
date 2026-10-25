@@ -318,6 +318,8 @@ async function startTaskTimer(req, res) {
         const tasks = await sql`
             SELECT
                 id,
+                name,
+                weight,
                 TO_CHAR(date, 'YYYY-MM-DD') AS date
             FROM tasks
             WHERE id = ${taskId}
@@ -369,7 +371,9 @@ async function startTaskTimer(req, res) {
             active_session: {
                 id: sessions[0].id,
                 task_id: sessions[0].task_id,
-                start_time: sessions[0].start_time
+                start_time: sessions[0].start_time,
+                task_name: tasks[0].name,
+                task_weight: Number(tasks[0].weight)
             },
             stopped_sessions: stopped.stoppedSessions,
             daily_scores: stopped.dailyScores
