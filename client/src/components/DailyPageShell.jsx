@@ -7,6 +7,7 @@ import {
   Package,
   Plus,
   Sparkles,
+  Square,
 } from 'lucide-react'
 import {
   getDateKey,
@@ -24,12 +25,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
-import { playMilestone } from '@/utils/soundEffects'
+import { playMilestone, playTimerStop } from '@/utils/soundEffects'
 
 const WEIGHT_PRESETS = [
-  { label: '1.0x Normal', value: '1' },
+  { label: '1.0x', value: '1' },
   { label: '1.5x Deep', value: '1.5' },
-  { label: '2.0x Intense', value: '2' },
+  { label: '2.0x Hard', value: '2' },
   { label: '0.5x Light', value: '0.5' },
 ]
 
@@ -184,7 +185,7 @@ export default function DailyPageShell({
       setChartRefreshTick((tick) => tick + 1)
       setPageStatus({
         type: 'success',
-        message: `Applied pack "${pack.name}" (${createdTasks.length} tasks added)`,
+        message: `Applied template "${pack.name}" (${createdTasks.length} tasks added)`,
       })
       setTimeout(() => setPageStatus({ type: '', message: '' }), 4000)
     } catch (err) {
@@ -230,6 +231,7 @@ export default function DailyPageShell({
     setIsSubmitting(true)
     setPageStatus({ type: '', message: '' })
     try {
+      playTimerStop()
       if (onStopActiveTimer) {
         await onStopActiveTimer(taskId)
       } else {
@@ -245,14 +247,18 @@ export default function DailyPageShell({
     }
   }
 
-  // Date step helper (prev/next day)
   function stepDate(daysOffset) {
     const current = new Date(`${date}T12:00:00`)
     current.setDate(current.getDate() + daysOffset)
     navigateTo(`/day/${getDateKey(current)}`)
   }
 
-  // Determine score status tier
+  // Active task object for top hero
+  const activeTask = useMemo(() => {
+    if (!activeSession) return null
+    return tasks.find((t) => String(t.id) === String(activeSession.task_id)) || null
+  }, [activeSession, tasks])
+
   const scoreGoalPercent = Math.min(100, Math.round((totalScore / 40) * 100))
   let scoreTier = {
     label: 'Under Target',
@@ -286,103 +292,281 @@ export default function DailyPageShell({
       activeSession={activeSession}
       onStopActiveTimer={handleStopTimer}
     >
-      <div className="page-stack">
-        {/* Top Navigation & Date Bar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="w-fit gap-1 text-muted-foreground hover:text-foreground"
-            onClick={onBack}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Calendar
-          </Button>
+      <div className="flex flex-col gap-4 max-w-full">
+        {/* Top Control Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs font-bold"
+              onClick={onBack}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Calendar
+            </Button>
 
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => stepDate(-1)}
-              title="Previous Day"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="px-2 text-xs font-semibold text-muted-foreground">
-              {canStartTimers ? 'Today' : date}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => stepDate(1)}
-              title="Next Day"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-card p-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => stepDate(-1)}
+                title="Previous Day"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-2 text-xs font-extrabold text-foreground">
+                {formatDateHeading(date)}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => stepDate(1)}
+                title="Next Day"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             {!canStartTimers && (
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="ml-1 h-8 text-xs font-semibold"
+                className="h-8 text-xs font-bold text-amber-500"
                 onClick={() => navigateTo(`/day/${todayKey}`)}
               >
                 Jump to Today
               </Button>
             )}
+
+            <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-card px-3 py-1 shadow-sm">
+              <span className="text-xs font-semibold text-muted-foreground">Today:</span>
+              <span className="text-sm font-extrabold text-foreground font-mono-numbers">
+                {totalScore.toFixed(1)} pts
+              </span>
+              <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full border', scoreTier.color)}>
+                {scoreGoalPercent}%
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Heading */}
-        <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold text-primary/90 flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Daily Focus Studio
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            {formatDateHeading(date)}
-          </h1>
-        </div>
+        {pageStatus.message && (
+          <Alert variant={pageStatus.type === 'error' ? 'destructive' : 'success'} className="py-2">
+            <AlertDescription role="status">{pageStatus.message}</AlertDescription>
+          </Alert>
+        )}
 
-        {/* TOP SECTION: Points Card & Breakdown Pie Chart Side-by-Side! (Addressing notes.txt point 3) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Left: Score & Goals Card */}
-          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-secondary/30 p-6 shadow-card">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Today&apos;s Productivity Score
-                </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold',
-                    scoreTier.color,
+        {/* Ergonomic Split Layout: Tasks & Immediate Controls on LEFT, Stats & Donut on RIGHT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* PRIMARY WORKSPACE (Left 7 Cols): Start Timer Immediately Above the Fold! */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* ACTIVE SESSION HERO (If a timer is running, prominent glowing card right at the top!) */}
+            {activeSession && activeTask && (
+              <div className="relative overflow-hidden rounded-2xl border-2 border-sky-500/60 bg-gradient-to-r from-sky-500/15 via-card to-card p-4 sm:p-5 shadow-xl ring-2 ring-sky-500/20 animate-pulse-glow">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-sky-500" />
+                    </span>
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-primary">
+                      Focus Session in Progress
+                    </span>
+                  </div>
+                  <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-primary font-mono-numbers">
+                    {activeTask.weight}x Multiplier
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-xl font-extrabold tracking-tight text-foreground">
+                    {activeTask.name}
+                  </h3>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono-numbers text-3xl font-extrabold text-foreground tracking-tight">
+                      {formatDuration(getTaskElapsedSeconds(activeTask))}
+                    </span>
+                    <span className="text-xs font-extrabold text-emerald-500 font-mono-numbers">
+                      +{calculatePoints(getTaskElapsedSeconds(activeTask), activeTask.weight).toFixed(1)} pts
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-end">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2 font-bold shadow-md h-9 px-5"
+                    onClick={() => handleStopTimer(activeTask.id)}
+                    disabled={isSubmitting}
+                  >
+                    <Square className="h-4 w-4" />
+                    Stop Active Timer
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* QUICK ADD TASK BAR (Right at the top so adding and starting is effortless!) */}
+            <div className="rounded-2xl border border-border/80 bg-card p-3 sm:p-4 shadow-card">
+              <form onSubmit={handleCustomTaskSubmit} className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                <div className="relative flex-1">
+                  <Input
+                    id="task-name"
+                    value={taskName}
+                    onChange={(event) => setTaskName(event.target.value)}
+                    placeholder="Focus task name... (e.g. System Design, Code Review)"
+                    maxLength={255}
+                    required
+                    className="h-10 rounded-xl border-border bg-secondary/30 px-3.5 text-xs sm:text-sm font-medium"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  {!customWeightMode ? (
+                    <div className="flex items-center gap-1">
+                      {WEIGHT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => setTaskWeight(preset.value)}
+                          className={cn(
+                            'rounded-lg px-2 py-1.5 text-xs font-bold transition-colors border',
+                            taskWeight === preset.value
+                              ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                              : 'bg-secondary/60 text-muted-foreground border-border/60 hover:text-foreground',
+                          )}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setCustomWeightMode(true)}
+                        className="rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:text-foreground underline"
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        value={taskWeight}
+                        onChange={(event) => setTaskWeight(event.target.value)}
+                        min="-100"
+                        max="100"
+                        step="0.1"
+                        className="h-10 w-20 text-center font-mono-numbers font-bold text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCustomWeightMode(false)}
+                        className="text-[11px] text-muted-foreground underline"
+                      >
+                        Presets
+                      </button>
+                    </div>
                   )}
-                >
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || !taskName.trim()}
+                    className="h-10 rounded-xl px-4 font-bold shadow-sm bg-primary text-primary-foreground gap-1.5 text-xs shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Task
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* FOCUS TASKS LIST (2 Columns, right here above the fold!) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <ListTodo className="h-4 w-4 text-primary" />
+                  Tasks ({tasks.length})
+                </h2>
+                {!canStartTimers && (
+                  <span className="text-[11px] text-amber-500 font-semibold">
+                    Viewing {date} — timers active for today only
+                  </span>
+                )}
+              </div>
+
+              {tasks.length === 0 ? (
+                <EmptyState
+                  icon={ListTodo}
+                  title="No tasks yet for this day"
+                  description="Type a task above or apply a template from the right panel to get started."
+                  className="py-10 bg-card rounded-2xl"
+                />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {tasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      elapsedSeconds={getTaskElapsedSeconds(task)}
+                      isActive={String(activeSession?.task_id) === String(task.id)}
+                      isSubmitting={isSubmitting}
+                      canStartTimers={canStartTimers}
+                      onStart={() => handleStartTimer(task.id)}
+                      onStop={() => handleStopTimer(task.id)}
+                      onDelete={() => handleDeleteTask(task.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* COMPANION SIDEBAR (Right 5 Cols): Stats, Goal Ring, Donut Chart & Quick Packs */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Daily Score & Goal Target Card */}
+            <div className="rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-secondary/30 p-5 shadow-card">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Productivity Score
+                </span>
+                <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold', scoreTier.color)}>
                   <Sparkles className="h-3 w-3" />
                   {scoreTier.label}
                 </span>
               </div>
 
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground font-mono-numbers">
-                  {totalScore.toFixed(1)}
-                </span>
-                <span className="text-lg font-semibold text-muted-foreground">pts</span>
+              <div className="mt-2 flex items-baseline justify-between">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-extrabold tracking-tight text-foreground font-mono-numbers">
+                    {totalScore.toFixed(1)}
+                  </span>
+                  <span className="text-sm font-semibold text-muted-foreground">pts</span>
+                </div>
+
+                <div className="text-right text-xs">
+                  <span className="text-muted-foreground">Focused: </span>
+                  <span className="font-extrabold text-foreground font-mono-numbers">
+                    {formatDuration(totalSeconds)}
+                  </span>
+                </div>
               </div>
 
               {/* Progress bar towards 40 pts goal */}
-              <div className="mt-4 space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-medium">
-                  <span className="text-muted-foreground">Daily Goal Target (40 pts)</span>
-                  <span className="font-semibold text-foreground font-mono-numbers">
-                    {scoreGoalPercent}%
-                  </span>
+              <div className="mt-3 space-y-1">
+                <div className="flex items-center justify-between text-[11px] font-semibold">
+                  <span className="text-muted-foreground">40 pts Flow Goal</span>
+                  <span className="font-bold text-foreground font-mono-numbers">{scoreGoalPercent}%</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                   <div
@@ -393,205 +577,58 @@ export default function DailyPageShell({
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border/60 pt-4 text-xs">
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Focused Time</span>
-                <span className="mt-0.5 text-base font-bold text-foreground font-mono-numbers">
-                  {formatDuration(totalSeconds)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Active Tasks</span>
-                <span className="mt-0.5 text-base font-bold text-foreground font-mono-numbers">
-                  {tasks.length} task{tasks.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Pie Chart side-by-side with points! */}
-          <div className="lg:col-span-7">
+            {/* Daily Breakdown Donut Chart (Hover slices for % share & task name) */}
             <DailyPieChart
               key={`${date}-${chartRefreshTick}`}
               date={date}
               refreshTrigger={chartRefreshTick}
             />
-          </div>
-        </div>
 
-        {/* HORIZONTAL QUICK PACKS BAR (Addressing notes.txt point 3: "move that packs option as horizontal bar") */}
-        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-card">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Quick Apply Templates
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigateTo('/packs')}
-              className="text-xs font-semibold text-primary hover:underline self-start sm:self-auto"
-            >
-              Manage Templates →
-            </button>
-          </div>
-
-          {packs.length === 0 ? (
-            <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-3 text-xs text-muted-foreground">
-              <span>No task templates created yet. Create reusable packs to batch add tasks in 1 click!</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs font-medium"
-                onClick={() => navigateTo('/packs')}
-              >
-                + Create Pack
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
-              {packs.map((pack) => (
-                <button
-                  key={pack.id}
-                  type="button"
-                  onClick={() => handleApplyPackDirect(pack)}
-                  disabled={isSubmitting}
-                  className="group flex items-center gap-2 rounded-xl border border-border/80 bg-secondary/60 hover:bg-primary/10 hover:border-primary/40 px-3.5 py-2 text-xs font-semibold text-foreground transition-all duration-150 disabled:opacity-50"
-                  title={`Add ${pack.tasks.length} tasks from ${pack.name}`}
-                >
-                  <Plus className="h-3.5 w-3.5 text-primary transition-transform group-hover:scale-125" />
-                  <span>{pack.name}</span>
-                  <span className="rounded-md bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono-numbers">
-                    {pack.tasks.length}
+            {/* Quick Apply Templates (Task Packs) */}
+            <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-card">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Package className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    Quick Templates
                   </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('/packs')}
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  Manage →
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
 
-        {/* QUICK ADD CUSTOM TASK BAR */}
-        <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-card">
-          <form onSubmit={handleCustomTaskSubmit} className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-            <div className="relative flex-1">
-              <Input
-                id="task-name"
-                value={taskName}
-                onChange={(event) => setTaskName(event.target.value)}
-                placeholder="What are you focusing on? (e.g. Core Algorithm, Writing Docs)"
-                maxLength={255}
-                required
-                className="h-11 rounded-xl border-border bg-secondary/40 px-4 text-sm font-medium focus-visible:ring-primary"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              {!customWeightMode ? (
-                <div className="flex items-center gap-1 overflow-x-auto">
-                  {WEIGHT_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setTaskWeight(preset.value)}
-                      className={cn(
-                        'rounded-lg px-2.5 py-2 text-xs font-semibold transition-colors border',
-                        taskWeight === preset.value
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                          : 'bg-secondary/60 text-muted-foreground border-border/60 hover:text-foreground',
-                      )}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setCustomWeightMode(true)}
-                    className="rounded-lg px-2 py-2 text-xs text-muted-foreground hover:text-foreground underline"
-                  >
-                    Custom
-                  </button>
+              {packs.length === 0 ? (
+                <div className="rounded-xl bg-secondary/40 p-3 text-xs text-muted-foreground text-center">
+                  <span>No templates created yet.</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={taskWeight}
-                    onChange={(event) => setTaskWeight(event.target.value)}
-                    min="-100"
-                    max="100"
-                    step="0.1"
-                    className="h-11 w-24 text-center font-mono-numbers font-bold"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setCustomWeightMode(false)}
-                    className="text-xs text-muted-foreground underline"
-                  >
-                    Presets
-                  </button>
+                <div className="flex flex-wrap gap-1.5">
+                  {packs.map((pack) => (
+                    <button
+                      key={pack.id}
+                      type="button"
+                      onClick={() => handleApplyPackDirect(pack)}
+                      disabled={isSubmitting}
+                      className="group flex items-center gap-1.5 rounded-xl border border-border/80 bg-secondary/60 hover:bg-primary/10 hover:border-primary/40 px-3 py-1.5 text-xs font-semibold text-foreground transition-all duration-150 disabled:opacity-50"
+                      title={`Add ${pack.tasks.length} tasks from ${pack.name}`}
+                    >
+                      <Plus className="h-3 w-3 text-primary transition-transform group-hover:scale-125" />
+                      <span className="truncate max-w-[120px]">{pack.name}</span>
+                      <span className="rounded bg-background px-1 text-[10px] text-muted-foreground font-mono-numbers">
+                        {pack.tasks.length}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
-
-              <Button
-                type="submit"
-                disabled={isSubmitting || !taskName.trim()}
-                className="h-11 rounded-xl px-5 font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
-              >
-                <Plus className="h-4 w-4" />
-                Add Task
-              </Button>
             </div>
-          </form>
-        </div>
-
-        {/* Notification Message */}
-        {pageStatus.message && (
-          <Alert variant={pageStatus.type === 'error' ? 'destructive' : 'success'}>
-            <AlertDescription role="status">{pageStatus.message}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* 2-COLUMN RESPONSIVE TASK GRID (Addressing notes.txt point 2: "make daily tasks 2 column") */}
-        <section aria-labelledby="task-list-title" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 id="task-list-title" className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-              <ListTodo className="h-4 w-4 text-primary" />
-              Focus Tasks ({tasks.length})
-            </h2>
-            {!canStartTimers && (
-              <span className="text-xs text-amber-500 font-medium">
-                Viewing past/future date — timers only active for today
-              </span>
-            )}
           </div>
-
-          {tasks.length === 0 ? (
-            <EmptyState
-              icon={ListTodo}
-              title="No focus tasks for this day"
-              description="Add a task above or apply a template from your packs to start tracking."
-              className="py-14 bg-card"
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  elapsedSeconds={getTaskElapsedSeconds(task)}
-                  isActive={String(activeSession?.task_id) === String(task.id)}
-                  isSubmitting={isSubmitting}
-                  canStartTimers={canStartTimers}
-                  onStart={() => handleStartTimer(task.id)}
-                  onStop={() => handleStopTimer(task.id)}
-                  onDelete={() => handleDeleteTask(task.id)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        </div>
       </div>
     </ProtectedShell>
   )

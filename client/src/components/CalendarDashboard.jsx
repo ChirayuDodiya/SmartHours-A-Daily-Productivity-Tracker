@@ -16,8 +16,6 @@ import {
 } from '../utils/helpers'
 import { API_URL, WEEKDAYS, MONTH_FORMATTER, DAY_FORMATTER } from '../utils/constants'
 import ProtectedShell from './ProtectedShell'
-import PageHeader from './layout/PageHeader'
-import StatCard from './shared/StatCard'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -25,9 +23,9 @@ import { cn } from '@/lib/utils'
 
 const SCORE_TIERS = [
   { level: 'purple', label: '50+ Legendary', bg: 'bg-violet-500/15 text-violet-500 border-violet-500/30' },
-  { level: 'green', label: '40–49 Target Reached', bg: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' },
-  { level: 'yellow', label: '30–39 In Momentum', bg: 'bg-amber-500/15 text-amber-500 border-amber-500/30' },
-  { level: 'red', label: '<30 Warming Up', bg: 'bg-rose-500/15 text-rose-500 border-rose-500/30' },
+  { level: 'green', label: '40–49 Flow', bg: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' },
+  { level: 'yellow', label: '30–39 Momentum', bg: 'bg-amber-500/15 text-amber-500 border-amber-500/30' },
+  { level: 'red', label: '<30 Warmup', bg: 'bg-rose-500/15 text-rose-500 border-rose-500/30' },
 ]
 
 const CELL_TIER_STYLES = {
@@ -117,15 +115,13 @@ export default function CalendarDashboard({
   }
 
   // Calculate monthly stats & current streak
-  const { totalMonthPoints, activeDaysCount, streakCount, legendaryCount } = useMemo(() => {
+  const { totalMonthPoints, streakCount, legendaryCount } = useMemo(() => {
     let points = 0
-    let activeDays = 0
     let legendary = 0
 
     Object.values(scoreByDate).forEach((pts) => {
       if (pts > 0) {
         points += pts
-        activeDays += 1
         if (pts >= 50) legendary += 1
       }
     })
@@ -136,7 +132,6 @@ export default function CalendarDashboard({
     while (true) {
       const k = getDateKey(checkDate)
       const pts = scoreByDate[k]
-      // For today, if 0, check if yesterday had points to keep streak active
       if (k === todayKey && (!pts || pts <= 0)) {
         checkDate.setDate(checkDate.getDate() - 1)
         continue
@@ -151,11 +146,15 @@ export default function CalendarDashboard({
 
     return {
       totalMonthPoints: points,
-      activeDaysCount: activeDays,
       streakCount: streak,
       legendaryCount: legendary,
     }
   }, [scoreByDate, todayKey])
+
+  const flowDaysCount = useMemo(
+    () => Object.values(scoreByDate).filter((p) => p >= 40).length,
+    [scoreByDate],
+  )
 
   return (
     <ProtectedShell
@@ -164,123 +163,125 @@ export default function CalendarDashboard({
       activeSession={activeSession}
       onStopActiveTimer={onStopActiveTimer}
     >
-      <div className="page-stack">
-        <PageHeader
-          eyebrow="Monthly Overview"
-          title="Productivity Momentum"
-          description="Build unbroken focus streaks. Color tiers visually measure your daily output."
-          actions={
-            <div className="flex items-center gap-2" aria-label="Month navigation">
+      <div className="flex flex-col h-[calc(100vh-5.5rem)] min-h-[580px] max-w-full gap-3 overflow-hidden">
+        {/* Compact Single-Line Command Bar (Navigation + Metrics + Legend) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3 shrink-0">
+          {/* Left: Month Navigator */}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={jumpToToday}
+              className="h-8 text-xs font-bold"
+            >
+              Today
+            </Button>
+
+            <div className="flex items-center rounded-xl border border-border/80 bg-card p-0.5 shadow-sm">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={jumpToToday}
-                className="font-semibold text-xs"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => moveMonth(-1)}
+                aria-label="Previous month"
               >
-                Today
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center rounded-xl border border-border/80 bg-card p-1 shadow-sm">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => moveMonth(-1)}
-                  aria-label="Previous month"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span
-                  className="min-w-[9.5rem] text-center text-xs font-bold text-foreground"
-                  aria-live="polite"
-                >
-                  {MONTH_FORMATTER.format(visibleMonth)}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => moveMonth(1)}
-                  aria-label="Next month"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <span
+                className="min-w-[8.5rem] text-center text-xs font-extrabold text-foreground tracking-tight"
+                aria-live="polite"
+              >
+                {MONTH_FORMATTER.format(visibleMonth)}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => moveMonth(1)}
+                aria-label="Next month"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          }
-        />
+          </div>
 
-        {/* Highlight KPI Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Month Output"
-            value={`${totalMonthPoints.toFixed(1)} pts`}
-            subvalue={`${activeDaysCount} active days recorded`}
-            icon={Zap}
-          />
-          <StatCard
-            label="Current Streak"
-            value={`${streakCount} Days`}
-            subvalue={streakCount > 0 ? 'Momentum chain active' : 'Start a task today to ignite streak'}
-            icon={Flame}
-          />
-          <StatCard
-            label="Flow Days (40+)"
-            value={`${Object.values(scoreByDate).filter((p) => p >= 40).length} Days`}
-            subvalue="Target 40 pts reached"
-            icon={Trophy}
-          />
-          <StatCard
-            label="Legendary (50+)"
-            value={`${legendaryCount} Days`}
-            subvalue="Ultra-deep work sessions"
-            icon={Sparkles}
-          />
+          {/* Center: Inline High-Density KPI Badges */}
+          <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-sm">
+              <Flame className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-muted-foreground">Streak:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">{streakCount}d</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-sm">
+              <Zap className="h-3.5 w-3.5 text-sky-500" />
+              <span className="text-muted-foreground">Month:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">{totalMonthPoints.toFixed(1)} pts</span>
+            </div>
+
+            <div className="hidden lg:flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-sm">
+              <Trophy className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-muted-foreground">Flow Days:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">{flowDaysCount}</span>
+            </div>
+
+            <div className="hidden xl:flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-sm">
+              <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+              <span className="text-muted-foreground">Legendary:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">{legendaryCount}</span>
+            </div>
+          </div>
+
+          {/* Right: Inline Tiers Legend */}
+          <div className="hidden md:flex items-center gap-1.5 text-xs">
+            {SCORE_TIERS.map(({ level, label, bg }) => (
+              <span
+                key={level}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold',
+                  bg,
+                )}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="font-semibold text-muted-foreground mr-1">Tiers:</span>
-          {SCORE_TIERS.map(({ level, label, bg }) => (
-            <span
-              key={level}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold',
-                bg,
-              )}
-            >
-              <span className="h-2 w-2 rounded-full bg-current" />
-              {label}
-            </span>
-          ))}
-        </div>
+        {scoreError && (
+          <Alert variant="destructive" className="py-2">
+            <AlertDescription role="status">{scoreError}</AlertDescription>
+          </Alert>
+        )}
 
-        {/* Calendar Grid */}
+        {/* Viewport-Fit Calendar Grid (Without Scroll) */}
         {isLoadingScores ? (
-          <Skeleton className="h-[460px] w-full rounded-2xl" />
+          <Skeleton className="flex-1 w-full rounded-2xl" />
         ) : (
           <div
-            className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card"
+            className="flex-1 flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card"
             role="grid"
             aria-label="Month calendar"
           >
             {/* Weekday headers */}
-            <div className="grid grid-cols-7 border-b border-border/70 bg-secondary/40" role="row">
+            <div className="grid grid-cols-7 border-b border-border/70 bg-secondary/40 shrink-0" role="row">
               {WEEKDAYS.map((weekday) => (
                 <div
                   key={weekday}
                   role="columnheader"
-                  className="py-3 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                  className="py-2 text-center text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground"
                 >
                   {weekday}
                 </div>
               ))}
             </div>
 
-            {/* Days grid */}
-            <div className="grid grid-cols-7 divide-x divide-y divide-border/60">
+            {/* Days grid - fills full remaining height */}
+            <div className="grid grid-cols-7 flex-1 divide-x divide-y divide-border/60">
               {calendarDays.map(({ date, key, isCurrentMonth }) => {
                 const isFuture = isFutureDate(key)
                 const score = isFuture ? 0 : scoreByDate[key] || 0
@@ -299,18 +300,18 @@ export default function CalendarDashboard({
                     aria-current={isToday ? 'date' : undefined}
                     onClick={() => navigateTo(`/day/${key}`)}
                     className={cn(
-                      'group relative flex min-h-[5.5rem] sm:min-h-[6.5rem] flex-col justify-between p-2.5 sm:p-3 text-left transition-all duration-150',
-                      !isCurrentMonth && 'bg-secondary/20 opacity-40',
+                      'group relative flex flex-col justify-between p-2 sm:p-2.5 text-left transition-all duration-150 overflow-hidden',
+                      !isCurrentMonth && 'bg-secondary/15 opacity-40',
                       isCurrentMonth && !scoreLevel && 'hover:bg-secondary/40',
                       scoreLevel && CELL_TIER_STYLES[scoreLevel],
                       isToday && 'ring-2 ring-inset ring-primary font-bold',
                     )}
                   >
-                    {/* Top row of cell: Day Number and Today Badge */}
+                    {/* Top Row: Day Number & Today indicator */}
                     <div className="flex w-full items-center justify-between">
                       <span
                         className={cn(
-                          'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-transform group-hover:scale-110',
+                          'flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-transform group-hover:scale-110',
                           isToday
                             ? 'bg-primary text-primary-foreground shadow-sm'
                             : 'text-foreground/90',
@@ -320,18 +321,18 @@ export default function CalendarDashboard({
                       </span>
 
                       {isToday && (
-                        <span className="hidden sm:inline-block rounded-md bg-primary/20 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-primary">
+                        <span className="hidden sm:inline-block rounded bg-primary/20 px-1 py-0.5 text-[8px] font-extrabold uppercase tracking-wider text-primary">
                           Today
                         </span>
                       )}
                     </div>
 
-                    {/* Bottom row of cell: Score Display */}
+                    {/* Bottom Row: Score Badge */}
                     {score > 0 ? (
-                      <div className="mt-2 flex items-center justify-between">
+                      <div className="mt-1 flex items-center justify-end">
                         <span
                           className={cn(
-                            'rounded-md px-1.5 py-0.5 text-[11px] font-extrabold font-mono-numbers shadow-sm',
+                            'rounded px-1.5 py-0.5 text-[10px] sm:text-[11px] font-extrabold font-mono-numbers shadow-sm',
                             BADGE_TIER_STYLES[scoreLevel],
                           )}
                         >
@@ -340,7 +341,7 @@ export default function CalendarDashboard({
                       </div>
                     ) : (
                       !isFuture && isCurrentMonth && (
-                        <span className="text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors">
+                        <span className="text-[9px] text-muted-foreground/30 group-hover:text-muted-foreground/70 transition-colors">
                           + Track
                         </span>
                       )
@@ -350,12 +351,6 @@ export default function CalendarDashboard({
               })}
             </div>
           </div>
-        )}
-
-        {scoreError && (
-          <Alert variant="destructive">
-            <AlertDescription role="status">{scoreError}</AlertDescription>
-          </Alert>
         )}
       </div>
     </ProtectedShell>
