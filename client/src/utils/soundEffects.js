@@ -1,30 +1,35 @@
-// Web Audio API synthesized sound cues with zero external assets
+import { safeGet, safeSet } from './storage'
 
 let audioCtx = null
 
 function getAudioContext() {
   if (typeof window === 'undefined') return null
-  if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext
-    if (AudioContextClass) {
-      audioCtx = new AudioContextClass()
+  try {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass()
+      }
     }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {})
+    }
+    return audioCtx
+  } catch {
+    // Brave Shields / Fingerprinting protection or permission restrictions
+    return null
   }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {})
-  }
-  return audioCtx
 }
 
 export function isSoundEnabled() {
   if (typeof window === 'undefined') return false
-  const saved = localStorage.getItem('smarthours_sound_muted')
+  const saved = safeGet('smarthours_sound_muted')
   return saved !== 'true'
 }
 
 export function toggleSound() {
   const current = isSoundEnabled()
-  localStorage.setItem('smarthours_sound_muted', String(current))
+  safeSet('smarthours_sound_muted', String(current))
   return !current
 }
 
@@ -35,11 +40,10 @@ export function playTimerStart() {
     if (!ctx) return
     const now = ctx.currentTime
 
-    // Two pleasant ascending notes (C5 -> G5)
     const osc1 = ctx.createOscillator()
     const gain1 = ctx.createGain()
     osc1.type = 'sine'
-    osc1.frequency.setValueAtTime(523.25, now) // C5
+    osc1.frequency.setValueAtTime(523.25, now)
     gain1.gain.setValueAtTime(0.08, now)
     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18)
     osc1.connect(gain1)
@@ -50,7 +54,7 @@ export function playTimerStart() {
     const osc2 = ctx.createOscillator()
     const gain2 = ctx.createGain()
     osc2.type = 'sine'
-    osc2.frequency.setValueAtTime(783.99, now + 0.09) // G5
+    osc2.frequency.setValueAtTime(783.99, now + 0.09)
     gain2.gain.setValueAtTime(0.08, now + 0.09)
     gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
     osc2.connect(gain2)
@@ -58,7 +62,7 @@ export function playTimerStart() {
     osc2.start(now + 0.09)
     osc2.stop(now + 0.3)
   } catch {
-    // Audio autoplay or permissions handled gracefully
+    // Graceful fallback
   }
 }
 
@@ -69,7 +73,6 @@ export function playTimerStop() {
     if (!ctx) return
     const now = ctx.currentTime
 
-    // Soft descending tone (E5 -> B4)
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = 'sine'
@@ -82,7 +85,7 @@ export function playTimerStop() {
     osc.start(now)
     osc.stop(now + 0.24)
   } catch {
-    // Handled gracefully
+    // Graceful fallback
   }
 }
 
@@ -93,7 +96,6 @@ export function playMilestone() {
     if (!ctx) return
     const now = ctx.currentTime
 
-    // Triumphant chord (C5 -> E5 -> G5 -> C6)
     const notes = [523.25, 659.25, 783.99, 1046.5]
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator()
@@ -109,6 +111,6 @@ export function playMilestone() {
       osc.stop(noteTime + 0.35)
     })
   } catch {
-    // Handled gracefully
+    // Graceful fallback
   }
 }

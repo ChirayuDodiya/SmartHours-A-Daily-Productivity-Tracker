@@ -286,8 +286,16 @@ async function handleGoogleCallback(req, res) {
             RETURNING id, email
         `;
 
-        sendAuthCookie(res, users[0]);
-        return res.redirect(getFrontendRedirectUrl());
+        const token = sendAuthCookie(res, users[0]);
+        let targetUrl = getFrontendRedirectUrl();
+        try {
+            const redirectUrl = new URL(targetUrl);
+            redirectUrl.searchParams.set('token', token);
+            targetUrl = redirectUrl.toString();
+        } catch {
+            targetUrl = targetUrl + (targetUrl.includes('?') ? String.fromCharCode(38) : '?') + 'token=' + encodeURIComponent(token);
+        }
+        return res.redirect(targetUrl);
     }
     catch (err) {
         console.error('Google callback error:', err);

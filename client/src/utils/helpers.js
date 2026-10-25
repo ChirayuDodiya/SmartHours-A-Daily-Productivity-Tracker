@@ -1,4 +1,5 @@
 import { API_URL, DATE_HEADING_FORMATTER } from './constants'
+import { getStoredToken } from './storage'
 
 export function getDateKey(date) {
   const year = date.getFullYear()
@@ -62,11 +63,15 @@ export function navigateTo(path) {
 }
 
 export async function apiRequest(path, options = {}) {
+  const token = getStoredToken()
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+
   const response = await fetch(`${API_URL}${path}`, {
     credentials: 'include',
     ...options,
     headers: {
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...authHeaders,
       ...options.headers,
     },
   })

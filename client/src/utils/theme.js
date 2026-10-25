@@ -1,23 +1,33 @@
+import { safeGet, safeSet } from './storage'
+
 export function getInitialTheme() {
   if (typeof window === 'undefined') return 'dark'
-  const saved = localStorage.getItem('smarthours_theme')
+  const saved = safeGet('smarthours_theme')
   if (saved === 'light' || saved === 'dark') {
     return saved
   }
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-    ? 'light'
-    : 'dark'
+  try {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark'
+  } catch {
+    return 'dark'
+  }
 }
 
 export function applyTheme(theme) {
   if (typeof document === 'undefined') return
-  const root = document.documentElement
-  if (theme === 'dark') {
-    root.classList.add('dark')
-    root.classList.remove('light')
-  } else {
-    root.classList.remove('dark')
-    root.classList.add('light')
+  try {
+    const root = document.documentElement
+    if (theme === 'dark') {
+      root.classList.add('dark')
+      root.classList.remove('light')
+    } else {
+      root.classList.remove('dark')
+      root.classList.add('light')
+    }
+    safeSet('smarthours_theme', theme)
+  } catch {
+    // Ignore in restricted environments
   }
-  localStorage.setItem('smarthours_theme', theme)
 }

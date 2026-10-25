@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AuthPage from './components/AuthPage'
 import LoadingScreen from './components/shared/LoadingScreen'
+import DailyPageShell from './components/DailyPageShell'
+import CalendarDashboard from './components/CalendarDashboard'
+import TaskPacksPage from './components/TaskPacksPage'
+import InsightsDashboard from './components/InsightsDashboard'
 import { getRoutePath, navigateTo } from './utils/helpers'
 import { API_URL } from './utils/constants'
-
-const DailyPageShell = lazy(() => import('./components/DailyPageShell'))
-const CalendarDashboard = lazy(() => import('./components/CalendarDashboard'))
-const TaskPacksPage = lazy(() => import('./components/TaskPacksPage'))
-const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'))
+import { getStoredToken, setStoredToken, removeStoredToken } from './utils/storage'
 
 function App() {
   const [authState, setAuthState] = useState({
@@ -59,10 +59,29 @@ function App() {
 
   useEffect(() => {
     let isMounted = true
-    localStorage.removeItem('smarthours_token')
+
+    // Check if token was provided in URL (e.g. redirected from Google OAuth)
+    if (typeof window !== 'undefined') {
+      try {
+        const urlParams = new URLSearchParams(window.location.search)
+        const urlToken = urlParams.get('token')
+        if (urlToken) {
+          setStoredToken(urlToken)
+          urlParams.delete('token')
+          const cleanQuery = urlParams.toString() ? `?${urlParams.toString()}` : ''
+          window.history.replaceState({}, '', `${window.location.pathname}${cleanQuery}`)
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    const token = getStoredToken()
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
     fetch(`${API_URL}/auth/me`, {
       credentials: 'include',
+      headers,
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -94,8 +113,12 @@ function App() {
       return
     }
 
+    const token = getStoredToken()
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
     fetch(`${API_URL}/api/v1/sessions/active`, {
       credentials: 'include',
+      headers,
     })
       .then(async (res) => {
         if (!res.ok) return null
@@ -116,8 +139,12 @@ function App() {
 
     const intervalId = window.setInterval(async () => {
       try {
+        const token = getStoredToken()
+        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
         const response = await fetch(`${API_URL}/auth/me`, {
           credentials: 'include',
+          headers,
         })
 
         if (!response.ok) {
@@ -162,6 +189,10 @@ function App() {
         throw new Error(data.message || 'Authentication failed')
       }
 
+      if (data.token) {
+        setStoredToken(data.token)
+      }
+
       setStatus({
         type: 'success',
         message: isRegister
@@ -189,14 +220,22 @@ function App() {
   }
 
   async function handleLogout() {
-    await fetch(`${API_URL}/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    })
+    const token = getStoredToken()
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+      })
+    } catch {
+      // Ignore network errors on logout
+    }
+
+    removeStoredToken()
     setAuthState({ isChecking: false, user: null })
     setActiveSession(null)
-    localStorage.removeItem('smarthours_token')
     setEmail('')
     setPassword('')
     setStatus({ type: '', message: '' })
@@ -204,9 +243,13 @@ function App() {
 
   async function handleStopActiveTimer(taskId) {
     try {
+      const token = getStoredToken()
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
       await fetch(`${API_URL}/api/v1/tasks/${taskId}/stop`, {
         method: 'POST',
         credentials: 'include',
+        headers,
       })
       setActiveSession(null)
     } catch (err) {
@@ -221,40 +264,48 @@ function App() {
   if (authState.user) {
     const dayMatch = routePath.match(/^\/day\/(\d{4}-\d{2}-\d{2})$/)
 
+    if (dayMatch) {
+      return (
+        <DailyPageShell
+          date={dayMatch[1]}
+          user={authState.user}
+          onBack={() => navigateTo('/')}
+          onLogout={handleLogout}
+          activeSession={activeSession}
+          onStopActiveTimer={handleStopActiveTimer}
+        />
+      )
+    }
+
+    if (routePath === '/packs') {
+      return (
+        <TaskPacksPage
+          user={authState.user}
+          onLogout={handleLogout}
+          activeSession={activeSession}
+          onStopActiveTimer={handleStopActiveTimer}
+        />
+      )
+    }
+
+    if (routePath === '/analytics') {
+      return (
+        <InsightsDashboard
+          user={authState.user}
+          onLogout={handleLogout}
+          activeSession={activeSession}
+          onStopActiveTimer={handleStopActiveTimer}
+        />
+      )
+    }
+
     return (
-      <Suspense fallback={<LoadingScreen />}>
-        {dayMatch ? (
-          <DailyPageShell
-            date={dayMatch[1]}
-            user={authState.user}
-            onBack={() => navigateTo('/')}
-            onLogout={handleLogout}
-            activeSession={activeSession}
-            onStopActiveTimer={handleStopActiveTimer}
-          />
-        ) : routePath === '/packs' ? (
-          <TaskPacksPage
-            user={authState.user}
-            onLogout={handleLogout}
-            activeSession={activeSession}
-            onStopActiveTimer={handleStopActiveTimer}
-          />
-        ) : routePath === '/analytics' ? (
-          <AnalyticsDashboard
-            user={authState.user}
-            onLogout={handleLogout}
-            activeSession={activeSession}
-            onStopActiveTimer={handleStopActiveTimer}
-          />
-        ) : (
-          <CalendarDashboard
-            user={authState.user}
-            onLogout={handleLogout}
-            activeSession={activeSession}
-            onStopActiveTimer={handleStopActiveTimer}
-          />
-        )}
-      </Suspense>
+      <CalendarDashboard
+        user={authState.user}
+        onLogout={handleLogout}
+        activeSession={activeSession}
+        onStopActiveTimer={handleStopActiveTimer}
+      />
     )
   }
 
