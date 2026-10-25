@@ -51,7 +51,7 @@ function OptimizedPieChartInner({
 
   return (
     <div
-      className={cn('w-full min-w-0', className)}
+      className={cn('w-full min-w-0 min-h-0', className)}
       style={{ height }}
       role="img"
       aria-label="Task time breakdown chart"

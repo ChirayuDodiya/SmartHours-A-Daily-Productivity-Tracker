@@ -9,8 +9,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts'
-import { CHART_HEIGHT, CHART_MARGIN } from './charts/chartTheme'
+import { CHART_MARGIN } from './charts/chartTheme'
 import { formatDuration } from '@/utils/helpers'
+import { cn } from '@/lib/utils'
 
 function formatXAxis(tickItem, activeTab) {
   if (activeTab === 'weekly' || activeTab === 'monthly') {
@@ -54,7 +55,13 @@ function CustomBarTooltip({ active, payload, label }) {
   )
 }
 
-function SharedBarChartInner({ data, isLoading, activeTab }) {
+function SharedBarChartInner({
+  data,
+  isLoading,
+  activeTab,
+  height = '100%',
+  className,
+}) {
   const xKey = activeTab === 'yearly' ? 'month' : 'date'
   const tickFormatter = useMemo(
     () => (tick) => formatXAxis(tick, activeTab),
@@ -66,9 +73,20 @@ function SharedBarChartInner({ data, isLoading, activeTab }) {
   }
 
   return (
-    <div className="w-full min-w-0" style={{ height: CHART_HEIGHT.bar }}>
+    <div
+      className={cn('w-full h-full min-w-0 min-h-0', className)}
+      style={{ height }}
+    >
       <ResponsiveContainer width="100%" height="100%" debounce={32}>
-        <BarChart data={data} margin={CHART_MARGIN}>
+        <BarChart
+          data={data}
+          margin={{
+            top: CHART_MARGIN.top,
+            right: 36,
+            left: CHART_MARGIN.left,
+            bottom: CHART_MARGIN.bottom,
+          }}
+        >
           <defs>
             <linearGradient id="primaryBarGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.95} />

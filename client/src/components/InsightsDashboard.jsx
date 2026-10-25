@@ -4,20 +4,27 @@ import {
   TrendingUp,
   Trophy,
   Zap,
+  BarChart3,
+  Calendar,
+  Sparkles,
 } from 'lucide-react'
 import ProtectedShell from './ProtectedShell'
-import PageHeader from './layout/PageHeader'
 import SharedBarChart from './SharedBarChart'
-import ChartPanel from './shared/ChartPanel'
-import StatCard from './shared/StatCard'
 import OptimizedPieChart from './charts/OptimizedPieChart'
+import EmptyState from './shared/EmptyState'
 import { apiRequest, formatDuration, getDateKey } from '../utils/helpers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+
+const TABS = [
+  { id: 'weekly', label: 'Weekly' },
+  { id: 'monthly', label: 'Monthly' },
+  { id: 'yearly', label: 'Yearly' },
+  { id: 'custom', label: 'Custom Range' },
+]
 
 export default function AnalyticsDashboard({
   user,
@@ -132,11 +139,36 @@ export default function AnalyticsDashboard({
     data.length > 0 &&
     (activeTab !== 'custom' || data.some((item) => Number(item.total_seconds) > 0))
 
-  const chartTitle = `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Performance`
-  const chartDescription =
-    activeTab === 'custom'
-      ? 'Time & percentage distribution by task label across the selected window'
-      : 'Points momentum and focus output recorded over time'
+  const chartMeta = useMemo(() => {
+    switch (activeTab) {
+      case 'weekly':
+        return {
+          title: 'Weekly Momentum',
+          subtitle: 'Daily focus accumulation against target baseline',
+          badge: '40 pts target',
+        }
+      case 'monthly':
+        return {
+          title: 'Monthly Consistency',
+          subtitle: 'Daily performance trajectory across the month',
+          badge: '40 pts target',
+        }
+      case 'yearly':
+        return {
+          title: 'Yearly Aggregate Arc',
+          subtitle: 'Monthly output volume and seasonal rhythm',
+          badge: `${data?.length || 0} months tracked`,
+        }
+      case 'custom':
+        return {
+          title: 'Custom Task Allocation',
+          subtitle: 'Time distribution breakdown across selected date range',
+          badge: `${data?.length || 0} tasks tracked`,
+        }
+      default:
+        return { title: 'Productivity Curve', subtitle: '', badge: '' }
+    }
+  }, [activeTab, data])
 
   return (
     <ProtectedShell
@@ -145,154 +177,229 @@ export default function AnalyticsDashboard({
       activeSession={activeSession}
       onStopActiveTimer={onStopActiveTimer}
     >
-      <div className="page-stack">
-        <PageHeader
-          eyebrow="Intelligence & Metrics"
-          title="Productivity Analytics"
-          description="Analyze your deep work patterns, point accumulation rates, and consistency over time."
-        />
+      <div className="flex flex-col h-[calc(100vh-5.5rem)] min-h-[560px] max-w-full gap-2.5 overflow-hidden">
+        {/* Compact Command Bar: View Switcher + High-Density Telemetry Chips */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border/70 pb-2.5 shrink-0">
+          {/* Left: View Switcher Pills */}
+          <div className="flex items-center rounded-xl border border-border/80 bg-card p-0.5 shadow-xs">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleTabChange(tab.id)}
+                  className={cn(
+                    'px-3 py-1 text-xs font-semibold rounded-lg transition-all',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
 
-        {/* Aggregate KPI Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Points"
-            value={`${totalPoints.toFixed(1)} pts`}
-            subvalue={`Across ${data?.length || 0} periods`}
-            icon={Zap}
-          />
-          <StatCard
-            label="Total Focus"
-            value={formatDuration(totalTimeSeconds)}
-            subvalue="Cumulative session duration"
-            icon={Clock}
-          />
-          <StatCard
-            label="Average Output"
-            value={`${avgPoints.toFixed(1)} pts`}
-            subvalue="Per tracked interval"
-            icon={TrendingUp}
-          />
-          <StatCard
-            label="Top Performance"
-            value={bestDay ? `${bestDay.points.toFixed(1)} pts` : `${totalPoints.toFixed(1)} pts`}
-            subvalue={bestDay ? `Peak day (${bestDay.date})` : 'Highest session output'}
-            icon={Trophy}
-          />
+          {/* Right: Inline High-Density Telemetry Badges */}
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-xs shrink-0">
+              <Zap className="h-3.5 w-3.5 text-sky-500" />
+              <span className="text-muted-foreground">Total:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">
+                {totalPoints.toFixed(1)} pts
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-xs shrink-0">
+              <Clock className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-muted-foreground">Focus:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">
+                {formatDuration(totalTimeSeconds)}
+              </span>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-xs shrink-0">
+              <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+              <span className="text-muted-foreground">Avg:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">
+                {avgPoints.toFixed(1)} pts
+              </span>
+            </div>
+
+            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-semibold shadow-xs shrink-0">
+              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-muted-foreground">Peak:</span>
+              <span className="font-extrabold text-foreground font-mono-numbers">
+                {bestDay
+                  ? `${bestDay.points.toFixed(1)} pts (${bestDay.date.slice(5)})`
+                  : `${totalPoints.toFixed(1)} pts`}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* View Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="mb-2 grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:w-auto sm:grid-cols-none bg-card border border-border/80 p-1 rounded-xl">
-            {['weekly', 'monthly', 'yearly', 'custom'].map((tab) => (
-              <TabsTrigger
-                key={tab}
-                value={tab}
-                className="capitalize rounded-lg font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-none"
+        {/* Compact Custom Range Filter Bar (Only when Custom tab is selected) */}
+        {activeTab === 'custom' && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-1.5 shadow-xs shrink-0">
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-muted-foreground mr-1 flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-primary" /> Presets:
+              </span>
+              {[
+                { label: '7d', days: 7 },
+                { label: '14d', days: 14 },
+                { label: '30d', days: 30 },
+              ].map((p) => (
+                <button
+                  key={p.days}
+                  type="button"
+                  onClick={() => handleQuickRange(p.days)}
+                  className="h-6 px-2 text-[11px] font-semibold rounded-md border border-border/70 bg-background/80 hover:bg-muted text-foreground transition-colors"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Date Pickers + Action */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-muted-foreground">From:</span>
+                <Input
+                  type="date"
+                  value={customRange.from}
+                  onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
+                  className="h-7 w-32 px-2 text-xs rounded-lg border-border/80 bg-background"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-muted-foreground">To:</span>
+                <Input
+                  type="date"
+                  value={customRange.to}
+                  onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
+                  className="h-7 w-32 px-2 text-xs rounded-lg border-border/80 bg-background"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleGenerateCustom}
+                className="h-7 px-3 text-xs font-bold rounded-lg shadow-xs"
               >
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+                Analyze
+              </Button>
+            </div>
+          </div>
+        )}
 
-          <TabsContent value="custom" className="mt-4">
-            <Card className="shadow-card border-border/80">
-              <CardContent className="flex flex-col gap-4 p-5 sm:p-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-muted-foreground mr-1">
-                    Quick Presets:
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-semibold"
-                    onClick={() => handleQuickRange(7)}
-                  >
-                    Last 7 Days
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-semibold"
-                    onClick={() => handleQuickRange(14)}
-                  >
-                    Last 14 Days
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-semibold"
-                    onClick={() => handleQuickRange(30)}
-                  >
-                    Last 30 Days
-                  </Button>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:gap-4 border-t border-border/60 pt-4">
-                  <div className="form-field">
-                    <Label htmlFor="from-date" className="text-xs font-semibold">
-                      From date
-                    </Label>
-                    <Input
-                      id="from-date"
-                      type="date"
-                      value={customRange.from}
-                      onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
-                      className="h-10 rounded-xl"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <Label htmlFor="to-date" className="text-xs font-semibold">
-                      To date
-                    </Label>
-                    <Input
-                      id="to-date"
-                      type="date"
-                      value={customRange.to}
-                      onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
-                      className="h-10 rounded-xl"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    className="h-10 rounded-xl font-bold shadow-sm"
-                    onClick={handleGenerateCustom}
-                  >
-                    Analyze Range
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
+        {/* Inline Error Notice */}
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="py-2 px-3 text-xs shrink-0">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <ChartPanel
-          title={chartTitle}
-          description={chartDescription}
-          isLoading={isLoading && activeTab !== 'custom'}
-          error={!isLoading ? error : ''}
-          isEmpty={!isLoading && !error && !hasData}
-          className="mt-0 rounded-2xl border-border/80 shadow-card"
-          emptyDescription={
-            activeTab === 'custom'
-              ? 'Select a date range above and click analyze to see your task distribution.'
-              : 'Complete focus sessions to start generating historical productivity curves.'
-          }
-        >
-          {activeTab === 'custom' ? (
-            <OptimizedPieChart data={data} variant="analytics" height={340} />
-          ) : (
-            <SharedBarChart data={data} isLoading={isLoading} activeTab={activeTab} />
-          )}
-        </ChartPanel>
+        {/* Main Telemetry Canvas: Fits remaining viewport space without scrolling */}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col rounded-2xl border border-border/80 bg-card p-4 shadow-card">
+          {/* Canvas Header */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-border/60 shrink-0">
+            <div>
+              <h2 className="text-sm font-bold text-foreground tracking-tight">
+                {chartMeta.title}
+              </h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {chartMeta.subtitle}
+              </p>
+            </div>
+
+            {/* Target indicator or period badge */}
+            {(activeTab === 'weekly' || activeTab === 'monthly') && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Target: 40 pts
+              </span>
+            )}
+
+            {(activeTab === 'yearly' || (activeTab === 'custom' && hasData)) && (
+              <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-2.5 py-0.5 rounded-full border border-border/60 shrink-0">
+                {chartMeta.badge}
+              </span>
+            )}
+          </div>
+
+          {/* Chart Viewport: Dynamically expands to 100% of available height */}
+          <div className="flex-1 min-h-0 w-full relative pt-2">
+            {isLoading && (
+              <div className="h-full w-full flex flex-col items-center justify-center gap-3">
+                <Skeleton className="h-32 w-32 rounded-full" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-14" />
+                </div>
+              </div>
+            )}
+
+            {!isLoading && error && (
+              <div className="h-full w-full flex items-center justify-center">
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !error && !hasData && (
+              <div className="h-full w-full flex items-center justify-center">
+                <EmptyState
+                  icon={activeTab === 'custom' ? Calendar : BarChart3}
+                  title={activeTab === 'custom' ? 'No custom data selected' : 'No activity recorded'}
+                  description={
+                    activeTab === 'custom'
+                      ? 'Pick a date range above or use a quick preset (7d, 14d, 30d) and click Analyze.'
+                      : 'Complete focus sessions in the Calendar tab to start generating productivity curves.'
+                  }
+                  className="border-none bg-transparent py-4 max-w-md"
+                  action={
+                    activeTab === 'custom' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleQuickRange(7)}
+                        className="text-xs font-semibold"
+                      >
+                        Load Last 7 Days
+                      </Button>
+                    ) : null
+                  }
+                />
+              </div>
+            )}
+
+            {!isLoading && !error && hasData && (
+              activeTab === 'custom' ? (
+                <OptimizedPieChart
+                  data={data}
+                  variant="analytics"
+                  height="100%"
+                  className="h-full w-full"
+                />
+              ) : (
+                <SharedBarChart
+                  data={data}
+                  isLoading={isLoading}
+                  activeTab={activeTab}
+                  height="100%"
+                  className="h-full w-full"
+                />
+              )
+            )}
+          </div>
+        </div>
       </div>
     </ProtectedShell>
   )
