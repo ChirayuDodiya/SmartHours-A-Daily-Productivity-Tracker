@@ -13,8 +13,9 @@ import {
   getScoreLevel,
   isFutureDate,
   navigateTo,
+  apiRequest,
 } from '../utils/helpers'
-import { API_URL, WEEKDAYS, MONTH_FORMATTER, DAY_FORMATTER } from '../utils/constants'
+import { WEEKDAYS, MONTH_FORMATTER, DAY_FORMATTER } from '../utils/constants'
 import ProtectedShell from './ProtectedShell'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -63,18 +64,9 @@ export default function CalendarDashboard({
     const controller = new AbortController()
     const year = visibleMonth.getFullYear()
     const month = visibleMonth.getMonth() + 1
-
-    fetch(`${API_URL}/api/v1/scores/month/${year}/${month}`, {
-      credentials: 'include',
+    apiRequest(`/api/v1/scores/month/${year}/${month}`, {
       signal: controller.signal,
     })
-      .then(async (response) => {
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.message || 'Scores could not be loaded')
-        }
-        return data
-      })
       .then((scores) => {
         const nextScoreByDate = scores.reduce((scoreMap, score) => {
           scoreMap[score.date] = Number(score.total_points) || 0
