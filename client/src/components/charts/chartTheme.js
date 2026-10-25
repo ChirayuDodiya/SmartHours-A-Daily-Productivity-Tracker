@@ -39,11 +39,22 @@ export const CHART_MARGIN = { top: 16, right: 16, left: -10, bottom: 8 }
 
 export function filterPieData(data) {
   if (!Array.isArray(data)) return []
-  return data.filter((item) => Number(item.total_seconds) > 0)
+  const filtered = data.filter((item) => Number(item.total_seconds) > 0)
+  const totalSeconds = filtered.reduce((acc, item) => acc + (Number(item.total_seconds) || 0), 0)
+
+  return filtered.map((item) => {
+    const secs = Number(item.total_seconds) || 0
+    const calculatedPct = totalSeconds > 0 ? Number(((secs / totalSeconds) * 100).toFixed(1)) : 0
+    return {
+      ...item,
+      total_seconds: secs,
+      pct: item.pct != null ? Number(item.pct) : calculatedPct,
+    }
+  })
 }
 
 export function pieDataSignature(data) {
   return data
-    .map((item) => `${item.task_name ?? ''}:${item.total_seconds ?? 0}`)
+    .map((item) => `${item.task_name ?? ''}:${item.total_seconds ?? 0}:${item.pct ?? 0}`)
     .join('|')
 }

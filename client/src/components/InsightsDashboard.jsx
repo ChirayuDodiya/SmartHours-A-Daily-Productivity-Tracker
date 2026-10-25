@@ -267,21 +267,27 @@ export default function AnalyticsDashboard({
             {/* Date Pickers + Action */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium text-muted-foreground">From:</span>
+                <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                  From:
+                </span>
                 <Input
                   type="date"
                   value={customRange.from}
                   onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
-                  className="h-7 w-32 px-2 text-xs rounded-lg border-border/80 bg-background"
+                  className="h-7 w-32 sm:w-34 px-2 text-xs rounded-lg border-border/80 bg-background dark:[color-scheme:dark]"
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium text-muted-foreground">To:</span>
+                <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                  To:
+                </span>
                 <Input
                   type="date"
                   value={customRange.to}
                   onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
-                  className="h-7 w-32 px-2 text-xs rounded-lg border-border/80 bg-background"
+                  className="h-7 w-32 sm:w-34 px-2 text-xs rounded-lg border-border/80 bg-background dark:[color-scheme:dark]"
                 />
               </div>
               <Button

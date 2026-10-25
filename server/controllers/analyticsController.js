@@ -212,11 +212,18 @@ async function getRangeAnalytics(req, res) {
             ORDER BY points DESC
         `;
 
-        return res.json(stats.map(s => ({
-            task_name: s.task_name,
-            total_seconds: Number(s.total_seconds),
-            points: Number(s.points).toFixed(2)
-        })));
+        const totalAllSeconds = stats.reduce((acc, row) => acc + Number(row.total_seconds), 0);
+
+        return res.json(stats.map(s => {
+            const total_seconds = Number(s.total_seconds);
+            const pct = totalAllSeconds > 0 ? Number(((total_seconds / totalAllSeconds) * 100).toFixed(1)) : 0;
+            return {
+                task_name: s.task_name,
+                total_seconds,
+                points: Number(s.points).toFixed(2),
+                pct
+            };
+        }));
     } catch (err) {
         console.error('Range analytics error:', err);
         return res.status(500).json({ success: false, message: 'Could not load range analytics' });

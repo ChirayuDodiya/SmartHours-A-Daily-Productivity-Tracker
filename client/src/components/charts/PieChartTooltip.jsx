@@ -12,21 +12,23 @@ function TooltipCard({ children }) {
 export const AnalyticsPieTooltip = memo(function AnalyticsPieTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const item = payload[0]
-  const percent = item.percent != null ? (item.percent * 100).toFixed(1) : '0.0'
-  const pts = item.payload?.points
+  const data = item.payload || {}
+  const rawPct = data.pct != null ? data.pct : (item.percent != null ? item.percent * 100 : null)
+  const percent = rawPct != null && !isNaN(rawPct) ? Number(rawPct).toFixed(1) : '0.0'
+  const pts = data.points
   return (
     <TooltipCard>
       <p className="mb-1 text-sm font-semibold tracking-tight text-foreground">
-        {item.name}
+        {item.name || data.task_name}
       </p>
       <div className="flex items-baseline gap-2">
-        <span className="text-xl font-bold tracking-tight text-primary">
+        <span className="text-xl font-bold tracking-tight text-primary font-mono-numbers">
           {percent}%
         </span>
         <span className="text-xs text-muted-foreground">share</span>
       </div>
       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{formatDuration(item.value)}</span>
+        <span>{formatDuration(item.value || data.total_seconds)}</span>
         {pts != null && (
           <span className="font-semibold text-foreground/90 font-mono-numbers">
             +{pts} pts
@@ -40,21 +42,22 @@ export const AnalyticsPieTooltip = memo(function AnalyticsPieTooltip({ active, p
 export const DailyPieTooltip = memo(function DailyPieTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const item = payload[0]
-  const data = item.payload
-  const percent = item.percent != null ? (item.percent * 100).toFixed(1) : (data.pct ?? '0.0')
+  const data = item.payload || {}
+  const rawPct = data.pct != null ? data.pct : (item.percent != null ? item.percent * 100 : null)
+  const percent = rawPct != null && !isNaN(rawPct) ? Number(rawPct).toFixed(1) : '0.0'
   return (
     <TooltipCard>
       <p className="mb-1 text-sm font-semibold tracking-tight text-foreground">
-        {data.task_name}
+        {data.task_name || item.name}
       </p>
       <div className="flex items-baseline gap-2">
-        <span className="text-xl font-bold tracking-tight text-primary">
+        <span className="text-xl font-bold tracking-tight text-primary font-mono-numbers">
           {percent}%
         </span>
         <span className="text-xs text-muted-foreground">of today</span>
       </div>
       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{formatDuration(data.total_seconds)}</span>
+        <span>{formatDuration(data.total_seconds || item.value)}</span>
         {data.points != null && (
           <span className="font-semibold text-foreground/90 font-mono-numbers">
             +{data.points} pts

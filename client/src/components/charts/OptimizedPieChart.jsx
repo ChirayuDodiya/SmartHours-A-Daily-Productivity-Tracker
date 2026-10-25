@@ -15,10 +15,12 @@ const LegendContent = memo(function LegendContent({ payload }) {
   return (
     <ul className="mt-3 flex flex-wrap justify-center gap-x-3.5 gap-y-1.5 px-2">
       {payload.map((entry) => {
+        const dataItem = entry.payload || {}
+        const pct = dataItem.pct != null ? Number(dataItem.pct).toFixed(1) : null
         return (
           <li
             key={entry.value}
-            className="flex max-w-[200px] items-center gap-1.5 text-xs text-muted-foreground"
+            className="flex max-w-[220px] items-center gap-1.5 text-xs text-muted-foreground"
           >
             <span
               className="h-2 w-2 shrink-0 rounded-full"
@@ -28,6 +30,11 @@ const LegendContent = memo(function LegendContent({ payload }) {
             <span className="truncate font-medium text-foreground">
               {entry.value}
             </span>
+            {pct != null && (
+              <span className="shrink-0 text-[11px] font-semibold text-muted-foreground font-mono-numbers">
+                ({pct}%)
+              </span>
+            )}
           </li>
         )
       })}

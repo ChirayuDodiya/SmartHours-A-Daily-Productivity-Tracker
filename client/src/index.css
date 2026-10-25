@@ -45,6 +45,7 @@
 }
 
 :root {
+  color-scheme: light;
   --background: 216 33% 97%;
   --foreground: 222 47% 11%;
   --card: 0 0% 100%;
@@ -77,6 +78,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: 224 44% 6%;
   --foreground: 210 24% 98%;
   --card: 223 38% 11%;
@@ -127,6 +129,22 @@
   select,
   textarea {
     font: inherit;
+  }
+
+  /* Ensure native date picker calendar icon is clearly visible across themes */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.15s ease, filter 0.15s ease;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.15);
+    opacity: 0.9;
   }
 
   h1, h2, h3, h4, h5, h6 {
